@@ -84,21 +84,17 @@ function App() {
     }, [trainData, trainingStatus])
 
 
-    const predict = () => {
+    const predict = (digit: string[] | number[]) => {
         if (!nnData) return;
 
         const nn = new NeuralNet(nnData);
 
-        const current = testData[testDigitIndex];
-        const label = current[0];
-
-        const input = new Matrix(Matrix.convertArrayToMatrix( current.slice(1) )); 
+        const input = new Matrix(Matrix.convertArrayToMatrix( digit.slice(1) )); 
         const normalised = input.map(v => ((+v / 255 ) * 0.99 ) + 0.01)
-        const y = new Matrix(Array.from({length: 10}, (_, index) => [index === +label ? 1 : 0])); 
 
         nn.feedForward(normalised);
 
-        console.log(`prediction: ${nn.getPrediction()}, actual: ${current[0]}, confidence: ${ nn.a2.values[nn.getPrediction()][0] * 100}%`)
+        console.log(`prediction: ${nn.getPrediction()}, actual: ${digit[0]}, confidence: ${ nn.a2.values[nn.getPrediction()][0] * 100}%`)
 
         const canvas = imgRef.current!;
         const ctx = canvas.getContext("2d")!;
@@ -108,10 +104,10 @@ function App() {
 
         const imageData = ctx.getImageData(0, 0, 28, 28); 
         
-        for (var i = 0; i < current.length; i++) {
-          imageData.data[i * 4] = +current[i] * 255;
-          imageData.data[i * 4 + 1] = +current[i] * 255;
-          imageData.data[i * 4 + 2] = +current[i] * 255;
+        for (var i = 0; i < digit.length; i++) {
+          imageData.data[i * 4] = +digit[i] * 255;
+          imageData.data[i * 4 + 1] = +digit[i] * 255;
+          imageData.data[i * 4 + 2] = +digit[i] * 255;
           imageData.data[i * 4 + 3] = 255;
         }
 
@@ -121,7 +117,7 @@ function App() {
 
     return (
         <>
-            <DrawCanvas /> 
+            <DrawCanvas predict={predict} /> 
             <div>
                 <button onClick={() => setTrainingStatus(TrainingStatus.LOADING)}>start training</button>
             </div>
@@ -129,7 +125,7 @@ function App() {
             <div>
                 test data index
                 <input type={"number"} onChange={e => setTestDigitIndex(+e.target.value)}/>
-                <button onClick={predict}>predict</button>
+                <button onClick={() => predict(testData[testDigitIndex])}>predict</button>
             </div>
             <canvas style={{width: 150, height: 150}} ref={imgRef} /> 
         </> 
