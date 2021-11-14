@@ -1,50 +1,105 @@
-import { maxHeaderSize } from "http";
 import Matrix from "./matrix";
 
 
-const sigmoid = (m: Matrix) => {
+export interface INeuralNet {
+    numOfInputs: number;
+    numOfHiddens: number; 
+    numOfOutputs: number;
+    w0?: Matrix,
+    w1?: Matrix,
+    b0?: Matrix,
+    b1?: Matrix
+}
+
+const sigmoid = (m: Matrix, derivative: boolean = false) => {
+    return m.map(v => 1/ (1+ Math.exp(-v)) )
 }
 
 const Relu = (m: Matrix) => m.map(v => Math.max(0, v));
 
 
-
 class NeuralNet {
 
     a0: Matrix;
+    a1!: Matrix;
+    a2!: Matrix;
     w0: Matrix;
     w1: Matrix;
     b0: Matrix;
     b1: Matrix;
 
-    constructor(numOfInputs: number, numOfHiddens: number, numOfOutputs: number) {
+    constructor({numOfInputs, numOfHiddens, numOfOutputs, w0, w1, b0, b1} : INeuralNet ) {
         this.a0 = new Matrix(numOfInputs, 1);
         
         this.w0 = new Matrix(numOfHiddens, numOfInputs);
-        this.w0.initRand(-1,1);
+        if (w0) this.w0 = w0; else this.w0.initRand(-1,1);
         
-        this.b0 = new Matrix(Array.from({length: numOfHiddens}, _ => [0.01])); 
-  
-        this.w1 = new Matrix(numOfOutputs, numOfHiddens) 
-        this.w1.initRand(-1,1);
+        this.b0 = b0 ? b0 : new Matrix(Array.from({length: numOfHiddens}, _ => [0.01])); 
 
-        this.b1 = new Matrix(Array.from({length: numOfHiddens}, _ => [0.01])); 
+        this.w1 = new Matrix(numOfOutputs, numOfHiddens) 
+        if (w1) this.w1 = w1; else this.w1.initRand(-1,1);
+
+        this.b1 = b1 ? b1 : new Matrix(Array.from({length: numOfOutputs}, _ => [0.01])); 
     }
 
-    feedForward(inputs: Matrix, y: Matrix) {
+    feedForward(inputs: Matrix) {
         this.a0.values = inputs.values;
 
-        console.log(this.w0)
-        console.log(this.a0)
+        // console.log(this.w0)
+        // console.log(this.a0)
+        this.a1 = sigmoid(Matrix.dot(this.w0, this.a0).add(this.b0))
+        this.a2 = sigmoid(Matrix.dot(this.w1, this.a1).add(this.b1));
+
+        // console.log({a2: this.a2})
         
-        const a1 = Relu(Matrix.dot(this.w0, this.a0).add(this.b0))
-        const a2 = Relu(Matrix.dot(this.w1, a1).add(this.b1));
+        return this.a2;
+    }
 
-        console.log({a2})
+    calculateCost(y: Matrix) {
+        let cost=0;
+        y.forIJ((v, i, j) => {
+            cost += 0.5 * ((v - this.a2.values[i][j]) ** 2)
+        })
+        return cost;
+    }
 
-        console.log(a1);
+    backpropagate(y: Matrix) {
+
+       
+        const lr = 0.1;
+
+        const d2 = y.subtract(this.a2).multiply(this.a2.map(v => v * (1 - v))) //delta 2
+        const dJdW1 = Matrix.dot(d2, this.a1.transpose());
+
+        const d1 = Matrix.dot(this.w1.transpose(), d2).multiply(this.a1.map(v => v * (1 - v)));
+        const dJdW0 = Matrix.dot(d1, this.a0.transpose());
+
+        // console.log({dJdW1, dJdW0, d2, d1, b0: this.b0, b1: this.b1})
+
+        //update weights and biases
+        this.w1 = this.w1.add(dJdW1.multiply(lr));
+        this.b1 = this.b1.add(d2.multiply(lr));
+
+        this.w0 = this.w0.add(dJdW0.multiply(lr));
+        this.b0 = this.b0.add(d1) 
+
+        // console.log({w1: this.w1, w0: this.w0});
 
     }
+
+    getPrediction() {
+        let maxValue = 0;
+        let maxIndex = 0;
+
+        this.a2.forIJ((v, i)=> {
+            if (v > maxValue) {
+                maxValue = v; maxIndex = i;  
+            } 
+        })
+
+        return maxIndex;
+    }
+
 
 
 }
@@ -54,16 +109,6 @@ export default NeuralNet;
 
 /*
 
-    const nn = new NeuralNet(784, 10, 10);
-
-    nn.feedForward(new Matrix([]))
-
-    a0 => inputs
-    a1 => hidden
-    a2 => output
-
-    z1 => a1 before activation
-    z2 => a2 before activation
 
 
 */

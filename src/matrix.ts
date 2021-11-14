@@ -31,11 +31,6 @@ class Matrix {
         }
     }
 
-    // elementWise(m: Matrix, cb: (v1: number, v2: number) => number) {
-    //     if (this.rows !== m.rows || this.cols !== m.cols) throw new Error("rows and cols must be the same!")
-    //     return new Matrix(this._values.map((r, rowi) => r.map((v, coli) => cb(v, m.values[rowi][coli]) )) )
-    // }
-
     map(cb: (v: number, i: number, j: number) => number) {
         return new Matrix( this.values.map((row, i) => row.map((v, j) => cb(v, i, j))) )
     }
@@ -55,7 +50,7 @@ class Matrix {
     transpose() { 
         const T = new Matrix(this.cols, this.rows);
         this.forIJ(( value , i, j) => T.values[j][i] = value )
-        return T._values;
+        return T;
     }
 
     static convertArrayToMatrix(arr: number[] | string[]) {
@@ -67,7 +62,9 @@ class Matrix {
         const n = m1.rows;
         const m = m1.cols;
         const p = m2.cols;
-    
+        
+        if (m1.cols !== m2.rows) throw new Error(`cannot dot a (${m1.rows} x ${m1.cols}) & (${m2.rows} x ${m2.cols})`)
+
         const result = new Matrix(n, p);
         
         for (let i=0; i < n; i++) {
@@ -86,7 +83,10 @@ class Matrix {
 
 
     calc(m: Matrix | number, cb: (v1: number, v2: number) => number) {
-      return this.map((v, i, j) => m instanceof Matrix ? cb(v, m._values[i][j]) : cb(v,m)) 
+        if (m instanceof Matrix) {
+            if(this.rows !== m.rows || this.cols !== m.cols) throw new Error("rows and columns must be the same");            
+        }
+        return this.map((v, i, j) => m instanceof Matrix ? cb(v, m._values[i][j]) : cb(v,m)) 
     }
 
     add(m: Matrix | number) {
@@ -106,12 +106,6 @@ class Matrix {
         return this.calc(m, (v1, v2) => v1 / v2);
     }
     
-
-
-
-
-
-    
 }
 
 
@@ -120,10 +114,5 @@ export default Matrix;
 
 /* 
 
-    Matrix.elementWise(m1, m2, (v1, v2) => v1 + v2)
 
-
-    static elementWise(m1: Matrix | number, m2: Matrix | number) {
-        if (m1 instanceOf Matrix)
-    }
 */

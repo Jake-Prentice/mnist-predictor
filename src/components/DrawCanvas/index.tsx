@@ -23,7 +23,7 @@ const DrawCanvas = () => {
             onMouseMove={drawCanvas.draw}
             onTouchMove={drawCanvas.draw}
         />
-        <button onClick={() => console.log(ctx?.getImageData(0,0, drawCanvas.ref.current?.width!, drawCanvas.ref.current?.height!))}>click</button>
+        {/* <button onClick={() => console.log(ctx?.getImageData(0,0, drawCanvas.ref.current?.width!, drawCanvas.ref.current?.height!))}>click</button> */}
         </>
     )   
 }
