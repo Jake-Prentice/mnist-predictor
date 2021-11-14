@@ -51,7 +51,7 @@ function App() {
         
         const nnParams = {
             numOfInputs: 784, 
-            numOfHiddens: 10, 
+            numOfHiddens: 60, 
             numOfOutputs: 10
         }
 

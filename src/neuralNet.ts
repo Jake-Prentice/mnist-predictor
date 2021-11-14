@@ -30,7 +30,7 @@ class NeuralNet {
 
     constructor({numOfInputs, numOfHiddens, numOfOutputs, w0, w1, b0, b1} : INeuralNet ) {
         this.a0 = new Matrix(numOfInputs, 1);
-        
+
         this.w0 = new Matrix(numOfHiddens, numOfInputs);
         if (w0) this.w0 = w0; else this.w0.initRand(-1,1);
         
@@ -44,14 +44,11 @@ class NeuralNet {
 
     feedForward(inputs: Matrix) {
         this.a0.values = inputs.values;
-
         // console.log(this.w0)
         // console.log(this.a0)
         this.a1 = sigmoid(Matrix.dot(this.w0, this.a0).add(this.b0))
         this.a2 = sigmoid(Matrix.dot(this.w1, this.a1).add(this.b1));
-
         // console.log({a2: this.a2})
-        
         return this.a2;
     }
 
@@ -64,8 +61,6 @@ class NeuralNet {
     }
 
     backpropagate(y: Matrix) {
-
-       
         const lr = 0.1;
 
         const d2 = y.subtract(this.a2).multiply(this.a2.map(v => v * (1 - v))) //delta 2
@@ -99,8 +94,6 @@ class NeuralNet {
 
         return maxIndex;
     }
-
-
 
 }
 

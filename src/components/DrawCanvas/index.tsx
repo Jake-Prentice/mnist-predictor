@@ -4,7 +4,7 @@ import useDrawingCanvas from "./useDrawingCanvas"
 
 
 const DrawCanvas = () => {
-    const {drawCanvas, ctx} = useDrawingCanvas({initialHeight: 500, initialWidth: 500});
+    const {drawCanvas, ctx} = useDrawingCanvas({initialHeight: 28, initialWidth: 28});
     
     useEffect(() => {
         drawCanvas.initStyles()
