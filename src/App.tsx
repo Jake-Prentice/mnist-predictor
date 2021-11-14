@@ -57,7 +57,9 @@ function App() {
 
         const nn = new NeuralNet(nnParams);
 
-        for (let i=0; i < 10000; i++) {
+        console.log("training...");
+
+        for (let i=0; i < 60000; i++) {
             const label = trainData[i][0];
 
             const input = new Matrix(Matrix.convertArrayToMatrix( trainData[i].slice(1) ));
@@ -65,13 +67,19 @@ function App() {
             const normalised = input.map(v => ((+v / 255 ) * 0.99 ) + 0.01)
             const y = new Matrix(Array.from({length: 10}, (_, index) => [index === +label ? 1 : 0])); 
             
+            
             nn.feedForward(normalised)
+
+            if ( i % 11 === 0 ) console.log(`cost ${nn.calculateCost(y)}`)
+            
             nn.backpropagate(y);
         }
 
         setNNData({...nnParams, w0: nn.w0, w1: nn.w1, b0: nn.b0, b1: nn.b1})
 
         setTrainingStatus(TrainingStatus.DONE);
+
+        console.log("done");
 
     }, [trainData, trainingStatus])
 
@@ -82,12 +90,15 @@ function App() {
         const nn = new NeuralNet(nnData);
 
         const current = testData[testDigitIndex];
+        const label = current[0];
+
         const input = new Matrix(Matrix.convertArrayToMatrix( current.slice(1) )); 
         const normalised = input.map(v => ((+v / 255 ) * 0.99 ) + 0.01)
+        const y = new Matrix(Array.from({length: 10}, (_, index) => [index === +label ? 1 : 0])); 
 
         nn.feedForward(normalised);
 
-        console.log(`prediction: ${nn.getPrediction()}, actual: ${current[0]}`)
+        console.log(`prediction: ${nn.getPrediction()}, actual: ${current[0]}, confidence: ${ nn.a2.values[nn.getPrediction()][0] * 100}%`)
 
         const canvas = imgRef.current!;
         const ctx = canvas.getContext("2d")!;
@@ -95,7 +106,7 @@ function App() {
         canvas.width = 28;
         canvas.height = 28;
 
-        const imageData = ctx.getImageData(0, 0, 28, 28);
+        const imageData = ctx.getImageData(0, 0, 28, 28); 
         
         for (var i = 0; i < current.length; i++) {
           imageData.data[i * 4] = +current[i] * 255;
@@ -114,9 +125,7 @@ function App() {
             <div>
                 <button onClick={() => setTrainingStatus(TrainingStatus.LOADING)}>start training</button>
             </div>
-            <div>
-                {trainingStatus === TrainingStatus.LOADING && "training"}
-            </div>
+
             <div>
                 test data index
                 <input type={"number"} onChange={e => setTestDigitIndex(+e.target.value)}/>
