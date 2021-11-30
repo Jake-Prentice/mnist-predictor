@@ -1,0 +1,12 @@
+function getMiniBatches = (batchSize, dataSet)
+	
+	inputBatches = []
+
+	for i=0 to ( dataSet.length - 1 ) / batchSize
+		
+		inputBatches.push([])
+		
+		for j=0 to batchSize 
+        
+			inputBatches[i, j] = dataSet[i * batchSize + j]
+

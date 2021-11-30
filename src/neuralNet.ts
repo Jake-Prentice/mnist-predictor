@@ -5,6 +5,7 @@ export interface INeuralNet {
     numOfInputs: number;
     numOfHiddens: number; 
     numOfOutputs: number;
+    batchSize?: number;
     w0?: Matrix,
     w1?: Matrix,
     b0?: Matrix,
@@ -27,9 +28,11 @@ class NeuralNet {
     w1: Matrix;
     b0: Matrix;
     b1: Matrix;
+    batchSize: number;
 
-    constructor({numOfInputs, numOfHiddens, numOfOutputs, w0, w1, b0, b1} : INeuralNet ) {
-        this.a0 = new Matrix(numOfInputs, 1);
+    constructor({numOfInputs, numOfHiddens, numOfOutputs, batchSize=1, w0, w1, b0, b1} : INeuralNet ) {
+        this.batchSize = batchSize;
+        this.a0 = new Matrix(numOfInputs, batchSize);
 
         this.w0 = new Matrix(numOfHiddens, numOfInputs);
         if (w0) this.w0 = w0; else this.w0.initRand(-1,1);
@@ -43,7 +46,7 @@ class NeuralNet {
     }
 
     feedForward(inputs: Matrix) {
-        this.a0.values = inputs.values;
+        this.a0._values = inputs._values;
         // console.log(this.w0)
         // console.log(this.a0)
         this.a1 = sigmoid(Matrix.dot(this.w0, this.a0).add(this.b0))
@@ -55,28 +58,36 @@ class NeuralNet {
     calculateCost(y: Matrix) {
         let cost=0;
         y.forIJ((v, i, j) => {
-            cost += 0.5 * ((v - this.a2.values[i][j]) ** 2)
+            cost += 0.5 * ((v - this.a2._values[i][j]) ** 2)
         })
         return cost;
     }
-
+ 
     backpropagate(y: Matrix) {
         const lr = 0.1;
 
-        const d2 = y.subtract(this.a2).multiply(this.a2.map(v => v * (1 - v))) //delta 2
-        const dJdW1 = Matrix.dot(d2, this.a1.transpose());
+        let d2 = y.subtract(this.a2).multiply(this.a2.map(v => v * (1 - v))) //delta 2
+        let dJdW1 = Matrix.dot(d2, this.a1.transpose());
 
-        const d1 = Matrix.dot(this.w1.transpose(), d2).multiply(this.a1.map(v => v * (1 - v)));
-        const dJdW0 = Matrix.dot(d1, this.a0.transpose());
+        let d1 = Matrix.dot(this.w1.transpose(), d2).multiply(this.a1.map(v => v * (1 - v)));
+        let dJdW0 = Matrix.dot(d1, this.a0.transpose());
 
         // console.log({dJdW1, dJdW0, d2, d1, b0: this.b0, b1: this.b1})
 
+        if (this.batchSize > 1) {
+            dJdW1 = dJdW1.divide(this.batchSize);
+            dJdW0 = dJdW0.divide(this.batchSize);
+            d1 = d1.averageRows();
+            d2 = d2.averageRows();
+        }
+        
         //update weights and biases
         this.w1 = this.w1.add(dJdW1.multiply(lr));
         this.b1 = this.b1.add(d2.multiply(lr));
-
+        
+        console.log(this.b0) 
         this.w0 = this.w0.add(dJdW0.multiply(lr));
-        this.b0 = this.b0.add(d1) 
+        this.b0 = this.b0.add(d1.multiply(lr)); 
 
         // console.log({w1: this.w1, w0: this.w0});
 

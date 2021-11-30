@@ -3,18 +3,18 @@ class Matrix {
 
     rows: number;
     cols: number;
-    private _values: number[][];
+     _values: number[][];
 
-    get values() {
-        return this._values;
-    }
+    // get values() {
+    //     return this._values;
+    // }
     
-    set values(theValues: number[][]) {
-        if (this.rows !== theValues.length || this.cols !== theValues[0].length) {
-            throw new Error(`matrix is of dimensions (${this.rows} x ${this.cols}) not (${theValues.length} x ${theValues[0].length})`)
-        }
-        this._values = theValues;
-    }
+    // set values(theValues: number[][]) {
+    //     if (this.rows !== theValues.length || this.cols !== theValues[0].length) {
+    //         throw new Error(`matrix is of dimensions (${this.rows} x ${this.cols}) not (${theValues.length} x ${theValues[0].length})`)
+    //     }
+    //     this._values = theValues;
+    // }
 
     constructor(...params: [number, number] | [number[][]]) {
 
@@ -32,7 +32,7 @@ class Matrix {
     }
 
     map(cb: (v: number, i: number, j: number) => number) {
-        return new Matrix( this.values.map((row, i) => row.map((v, j) => cb(v, i, j))) )
+        return new Matrix( this._values.map((row, i) => row.map((v, j) => cb(v, i, j))) )
     }
 
     forIJ(cb: (value: number, i: number, j: number) => void) {
@@ -44,12 +44,12 @@ class Matrix {
     }
 
     initRand(min: number, max: number) {
-      this._values = this.map(() => Math.random() * (max - min) + min).values;
+      this._values = this.map(() => Math.random() * (max - min) + min)._values;
     }
 
     transpose() { 
         const T = new Matrix(this.cols, this.rows);
-        this.forIJ(( value , i, j) => T.values[j][i] = value )
+        this.forIJ(( value , i, j) => T._values[j][i] = value )
         return T;
     }
 
@@ -58,36 +58,77 @@ class Matrix {
     }
 
     static dot(m1: Matrix, m2: Matrix) {
-
-        const n = m1.rows;
-        const m = m1.cols;
-        const p = m2.cols;
-        
+            
         if (m1.cols !== m2.rows) throw new Error(`cannot dot a (${m1.rows} x ${m1.cols}) & (${m2.rows} x ${m2.cols})`)
 
-        const result = new Matrix(n, p);
+        const result = new Matrix(m1.rows, m2.cols);
         
-        for (let i=0; i < n; i++) {
-            for (let j=0; j < p; j++) {
+        for (let i=0; i < m1.rows; i++) {
+            for (let j=0; j < m2.cols; j++) {
                 let sum = 0;
-                for (let k=0; k < m; k++) {
-                    sum += m1.values[i][k] * m2.values[k][j];
+                for (let k=0; k < m1.cols; k++) {
+                    sum += m1._values[i][k] * m2._values[k][j];
                 }
     
-                result.values[i][j] = sum; 
+                result._values[i][j] = sum; 
             }
         }
     
         return result;
     }
 
-
-    calc(m: Matrix | number, cb: (v1: number, v2: number) => number) {
-        if (m instanceof Matrix) {
-            if(this.rows !== m.rows || this.cols !== m.cols) throw new Error("rows and columns must be the same");            
+    averageRows() {
+        const average: number[][] = [];
+        
+        for (let i=0; i < this.rows; i++) {
+            let sum = 0;
+            for (let j=0; j < this.cols; j++) {
+                sum += this._values[i][j];
+            }
+            average.push([sum / this.rows]);
         }
-        return this.map((v, i, j) => m instanceof Matrix ? cb(v, m._values[i][j]) : cb(v,m)) 
+
+        return new Matrix(average)
     }
+
+    averageCols() {
+        let sum = 0;
+        const average: number[][] = [[]];
+
+        for (let i=0; i < this.rows; i++) {
+            for (let j=0; j < this.cols; j++) {
+                sum += this._values[j][i];
+            }
+            average.push([sum / this.cols]);
+        }
+
+        return new Matrix(average)
+    }
+
+
+    
+    calc(m: Matrix | number, cb: (v1: number, v2: number) => number) {
+
+        if (
+            typeof m === "number" 
+            || m instanceof Matrix && (this.rows === m.rows && this.cols === m.cols)
+        ) {
+            return this.map((v, i, j) => m instanceof Matrix ? cb(v, m._values[i][j]) : cb(v,m))  
+        }
+
+        if (this.rows === m.rows) {
+            if (this.cols === 1) return m.map((v, i,j) => cb(this._values[i][0], v));
+            if (m.cols === 1) return this.map((v, i,j) => cb(v, m._values[i][0]));
+        }
+
+        if (this.cols === m.cols) {
+            if (this.rows === 1) return m.map((v, i, j) => cb(this._values[0][j], v));
+            if (m.rows === 1) return this.map((v, i, j) => cb(v, this._values[0][j]));
+        }
+
+        throw new Error(`(${this.rows} x ${this.cols}) & (${m.rows} x ${m.cols}) not broadcastable!`);
+    }
+
 
     add(m: Matrix | number) {
         return this.calc(m, (v1, v2) => v1 + v2);
