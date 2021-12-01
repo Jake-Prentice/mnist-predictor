@@ -7,43 +7,15 @@ import Settings from '../Settings';
 import { Container, GlobalStyle, OutputContainer } from './style';
 import DigitInput from '../DigitInput';
 import styled from 'styled-components';
+import * as mnist from "../../mnist";
 
 
-const getMnistBatches = (size: number, dataSet: number[][]): [number[][][], number[][][]] => {
 
-    const inputBatches: number[][][] = [];
-
-    for (let i=0; i < (dataSet.length - 1 )/ size; i++) {
-        inputBatches.push(dataSet.slice(i * size, (i+1)*size))
-    }
+// const train =  (nn: NeuralNet, inputBatches: number[][][], outputBatches: number[][][]) => new Promise<void>((resolve, reject) => {
     
-    const outputBatches = inputBatches.map(batch => batch.map(digit => {
-        const label = digit.shift() 
-        return Array.from({length: 10}, (_, index) => index === label ? 1 : 0) 
-    })); 
 
-    return [inputBatches, outputBatches];
-}
-
-const train =  (nn: NeuralNet, inputBatches: number[][][], outputBatches: number[][][]) => new Promise<void>((resolve, reject) => {
-    
-    for (let e=0; e < 5; e++) {
-        inputBatches.forEach((batch, i) => {
-            const inputs = new Matrix(batch);
-            const normalised = inputs.map(v => ((+v / 255 ) * 0.99 ) + 0.01).transpose();
-
-            const ys = new Matrix(outputBatches[i]).transpose();
-
-            nn.feedForward(normalised);
-
-            nn.backpropagate(ys)
-
-            console.log(i);
-
-        })
-    }
-    resolve();
-})
+//     resolve();
+// })
 
 
 export enum TrainingStatus {
@@ -107,17 +79,7 @@ function App() {
 
     },[])
 
-    useEffect(() => {
-        const m1 = new Matrix([ [1,2,3],
-                                [4,5,6]])
-        
-        const m2 = new Matrix([ [1,2,3],
-                                [4,5,6]])
-
-
-        console.log(m2.averageRows());
-    }, [])
-
+ 
     //train
     useEffect(() => {
         if (trainData.length === 0 || trainingStatus !== TrainingStatus.LOADING) return;
@@ -160,45 +122,50 @@ function App() {
 
         // })
 
-        (async () => {
+   
             const nnParams = {
                 numOfInputs: 784, 
                 numOfHiddens: 60, 
                 numOfOutputs: 10,
-                batchSize: 10
+                batchSize: 32
             }
     
             const nn = new NeuralNet(nnParams);
     
             console.log("training...");
     
-            const [inputBatches, outputBatches] = getMnistBatches(nnParams.batchSize, trainData);
+            const [inputBatches, outputBatches] = mnist.getMiniBatches(nnParams.batchSize, trainData);
 
-            await train(nn, inputBatches, outputBatches);
+            console.log({inputBatches})
+
+            for (let e=0; e < 5; e++) {
+                inputBatches.forEach((batch, i) => {
+                    const inputs = new Matrix(batch);
+                    const normalised = inputs.map(v => ((+v / 255 ) * 0.99 ) + 0.01).transpose();
+        
+                    const ys = new Matrix(outputBatches[i]).transpose();
+        
+                    nn.feedForward(normalised);
+        
+                    nn.backpropagate(ys)
+        
+                    console.log(i);
+        
+                })
+            }
                 
             setNNData({...nnParams, w0: nn.w0, w1: nn.w1, b0: nn.b0, b1: nn.b1})
 
             setTrainingStatus(TrainingStatus.DONE);
 
             console.log("done");
-        })();
+   
 
 
     }, [trainData, trainingStatus])
 
 
-    const predict = (digit: number[]) => {
-        if (!nnData) return;
-
-        const nn = new NeuralNet(nnData);
-
-        const input = new Matrix(Matrix.convertArrayToMatrix( digit.slice(1) )); 
-        const normalised = input.map(v => ((+v / 255 ) * 0.99 ) + 0.01)
-
-        nn.feedForward(normalised);
-
-        console.log(`prediction: ${nn.getPrediction()}, actual: ${digit[0]}, confidence: ${ nn.a2._values[nn.getPrediction()][0] * 100}%`)
-
+    const drawDigit = (digit: number[]) => {
         const canvas = imgRef.current!;
         const ctx = canvas.getContext("2d")!;
 
@@ -215,6 +182,23 @@ function App() {
         }
 
         ctx.putImageData(imageData, 0, 0);
+    }
+
+
+    const predict = (digit: number[]) => {
+        if (!nnData) return;
+
+        const nn = new NeuralNet(nnData);
+
+        const input = new Matrix(Matrix.convertArrayToMatrix( digit.slice(1) )); 
+        const normalised = input.map(v => ((+v / 255 ) * 0.99 ) + 0.01)
+
+        nn.feedForward(normalised);
+
+        console.log(`prediction: ${nn.getPrediction()}, actual: ${digit[0]}, confidence: ${ nn.a2._values[nn.getPrediction()][0] * 100}%`)
+
+        drawDigit(digit); 
+   
     }
 
 

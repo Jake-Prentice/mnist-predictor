@@ -8,7 +8,7 @@ const DrawCanvas = ({predict}: {predict: (digit: number[]) => void}) => {
     const {drawCanvas, ctx} = useDrawingCanvas({initialHeight: 300, initialWidth: 300});
     
     useEffect(() => {
-        drawCanvas.initStyles({lineWidth: 35})
+        drawCanvas.initStyles({lineWidth: 28})
      
     }, [])
 

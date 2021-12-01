@@ -77,18 +77,24 @@ class Matrix {
         return result;
     }
 
-    averageRows() {
-        const average: number[][] = [];
+    sumRows() {
+        const sums: number[][] = [];
         
         for (let i=0; i < this.rows; i++) {
             let sum = 0;
             for (let j=0; j < this.cols; j++) {
                 sum += this._values[i][j];
             }
-            average.push([sum / this.rows]);
+            sums.push([sum]);
         }
 
-        return new Matrix(average)
+        return new Matrix(sums);
+    }
+
+
+    averageRows() {
+        const sumMatrix = this.sumRows();
+        return sumMatrix.map((v, i, j) => v / this.rows);
     }
 
     averageCols() {

@@ -75,17 +75,16 @@ class NeuralNet {
         // console.log({dJdW1, dJdW0, d2, d1, b0: this.b0, b1: this.b1})
 
         if (this.batchSize > 1) {
-            dJdW1 = dJdW1.divide(this.batchSize);
-            dJdW0 = dJdW0.divide(this.batchSize);
-            d1 = d1.averageRows();
-            d2 = d2.averageRows();
+            // dJdW1 = dJdW1.divide(this.batchSize);
+            // dJdW0 = dJdW0.divide(this.batchSize);
+            d1 = d1.sumRows();
+            d2 = d2.sumRows();
         }
         
         //update weights and biases
         this.w1 = this.w1.add(dJdW1.multiply(lr));
         this.b1 = this.b1.add(d2.multiply(lr));
         
-        console.log(this.b0) 
         this.w0 = this.w0.add(dJdW0.multiply(lr));
         this.b0 = this.b0.add(d1.multiply(lr)); 
 
