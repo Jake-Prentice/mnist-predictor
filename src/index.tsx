@@ -1,10 +1,13 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import App from './components/App';
+import { MnistProvider } from './contexts/MnistContext';
 
 ReactDOM.render(
   <React.StrictMode>
-    <App />
+    <MnistProvider>
+      <App />
+    </MnistProvider>
   </React.StrictMode>,
   document.getElementById('root')
 );

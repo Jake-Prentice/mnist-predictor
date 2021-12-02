@@ -49,6 +49,7 @@ class Matrix {
 
     transpose() { 
         const T = new Matrix(this.cols, this.rows);
+        console.log(T, this.cols, this.rows)
         this.forIJ(( value , i, j) => T._values[j][i] = value )
         return T;
     }

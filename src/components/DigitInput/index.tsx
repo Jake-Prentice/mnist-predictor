@@ -1,6 +1,7 @@
 
 
 import React, { useState } from 'react'
+import DigitLibrary from '../DigitLibrary';
 import DrawCanvas from '../DrawCanvas';
 import { Container, SwitchButton, SwitcherContainer} from './style';
 
@@ -12,7 +13,7 @@ enum DigitInputTypeEnum {
 
 
 
-const DigitInput = ({predict}: {predict: (digit: number[]) => void}) => {
+const DigitInput = ({predict, drawDigit}: {predict: (digit: number[]) => void, drawDigit: (digit: number[]) => void}) => {
 
     const [digitInputType, setDigitInputType] = useState<DigitInputTypeEnum>(DigitInputTypeEnum.DRAW);
 
@@ -28,8 +29,8 @@ const DigitInput = ({predict}: {predict: (digit: number[]) => void}) => {
                     onClick={() => setDigitInputType(DigitInputTypeEnum.LIBRARY)}
                 >Digit Library</SwitchButton>
             </SwitcherContainer>
-            {digitInputType === DigitInputTypeEnum.DRAW && <DrawCanvas predict={predict} />}
-            {digitInputType === DigitInputTypeEnum.LIBRARY && <div></div>}
+            {digitInputType === DigitInputTypeEnum.DRAW && <DrawCanvas predict={predict} drawDigit={drawDigit}/>} 
+            {digitInputType === DigitInputTypeEnum.LIBRARY && <DigitLibrary />}
         </Container>
     )
 }

@@ -23,7 +23,7 @@ const useDrawingCanvas = (
     const [height, setHeight] = useState(initialWidth);
     
     useEffect(() => {
-        // adjustForDifferentPxRatios();        
+        adjustForDifferentPxRatios();        
     }, [width, height])
 
     useEffect(() => {

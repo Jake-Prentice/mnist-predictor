@@ -1,5 +1,3 @@
-
-
 import React from 'react'
 import { TrainingStatus } from '../App';
 import Button from '../shared/Button';
@@ -21,4 +19,3 @@ const Settings = ({setTrainingStatus}: IProps) => {
 }
 
 export default Settings;
- 
