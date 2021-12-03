@@ -67,10 +67,11 @@ class NeuralNet {
         const lr = 0.1;
 
         let d2 = y.subtract(this.a2).multiply(this.a2.map(v => v * (1 - v))) //delta 2
-        console.log({a1: this.a1} );
         let dJdW1 = Matrix.dot(d2, this.a1.transpose());
 
+        
         let d1 = Matrix.dot(this.w1.transpose(), d2).multiply(this.a1.map(v => v * (1 - v)));
+        
         let dJdW0 = Matrix.dot(d1, this.a0.transpose());
 
         // console.log({dJdW1, dJdW0, d2, d1, b0: this.b0, b1: this.b1})

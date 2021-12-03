@@ -3,10 +3,10 @@ import { shuffleArray } from "./utils";
 
 export const getMiniBatches = (size: number, dataSet: number[][]): [number[][][], number[][][]] => {
 
-    let shuffled = [...dataSet];
+    console.log({dataSet})
+    let shuffled = JSON.parse(JSON.stringify(dataSet));
     shuffleArray(shuffled);
 
-    console.log(shuffled)
     
     const inputBatches: number[][][] = [];
 
@@ -14,7 +14,6 @@ export const getMiniBatches = (size: number, dataSet: number[][]): [number[][][]
         inputBatches.push(shuffled.slice(i * size, (i+1)*size))
     }
 
-    console.log({inputBatches})
     
     const outputBatches = inputBatches.map(batch => batch.map(digit => {
         const label = digit.shift() 

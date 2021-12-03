@@ -1,3 +1,5 @@
+import { GPU } from "gpu.js";
+
 
 class Matrix {
 
@@ -47,9 +49,12 @@ class Matrix {
       this._values = this.map(() => Math.random() * (max - min) + min)._values;
     }
 
+    test(gpu: GPU) {
+   
+    }
+
     transpose() { 
         const T = new Matrix(this.cols, this.rows);
-        console.log(T, this.cols, this.rows)
         this.forIJ(( value , i, j) => T._values[j][i] = value )
         return T;
     }

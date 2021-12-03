@@ -20,6 +20,25 @@ export function useMnist() {
   return useContext(MnistContext)
 }
 
+
+const fetchMnistCsv = async (path: string, cb: (results: number[][]) => void) => {
+    const file = await fetch(path)
+    const blob = await file.blob();
+
+    const results: number[][] = [];
+
+   Papa.parse<any>(blob, {
+        delimiter: ",",
+        dynamicTyping: true,
+        worker: true,
+        step: (stepResults) => {
+            results.push(stepResults.data);
+        },
+         complete: () => cb(results)
+        
+    })
+} 
+
 export function MnistProvider({children}: React.PropsWithChildren<IProps>) {
         
     const [trainData, setTrainData] = useState<number[][]>([]);
@@ -27,23 +46,19 @@ export function MnistProvider({children}: React.PropsWithChildren<IProps>) {
 
 
     useEffect(() => {
-        Papa.parse<any>("./data/mnist_train.csv", {
-            download: true,
-            delimiter: ",",
-            dynamicTyping: true,
-            complete: (results: Papa.ParseResult<number[]>, file) => {
-                setTrainData(results.data.slice(1));
-            } 
-        })
 
-        Papa.parse<any>("./data/mnist_test.csv", {
-            download: true,
-            delimiter: ",",
-            dynamicTyping: true,
-            complete: (results: Papa.ParseResult<number[]>, file) => {
-                setTestData(results.data.slice(1)); 
-            } 
-        })
+        (async () => {
+            console.log("Loading csvs...")
+            await fetchMnistCsv("./data/mnist_train.csv", (results) => {
+                setTrainData(results.slice(1).slice(0,-1));
+            })
+
+            await fetchMnistCsv("./data/mnist_test.csv", (results) => {
+                setTestData(results.slice(1).slice(0,-1));
+            })
+            console.log("finished loading csvs")
+        })();
+
     }, [])
 
     useEffect(() => {

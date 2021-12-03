@@ -61,7 +61,7 @@ const DigitLibrary = () => {
 
     return (
         <>
-            <canvas 
+            <StyledCanvas 
                style={{width: 300, height: 300}}
          
                 ref={imgRef} 

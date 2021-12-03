@@ -10,6 +10,9 @@ import styled from 'styled-components';
 import * as mnist from "../../mnist";
 import { MnistProvider, useMnist } from '../../contexts/MnistContext';
 
+import { GPU } from 'gpu.js';
+
+
 
 
 // const train =  (nn: NeuralNet, inputBatches: number[][][], outputBatches: number[][][]) => new Promise<void>((resolve, reject) => {
@@ -69,6 +72,10 @@ function App() {
     const {trainData, testData } = useMnist();
 
 
+    useEffect(() => {
+
+
+    }, [])
     //train
     useEffect(() => {
         if (trainData.length === 0 || trainingStatus !== TrainingStatus.LOADING) return;
@@ -114,7 +121,7 @@ function App() {
    
             const nnParams = {
                 numOfInputs: 784, 
-                numOfHiddens: 10, 
+                numOfHiddens: 1, 
                 numOfOutputs: 10,
                 batchSize: 1
             }
@@ -122,6 +129,7 @@ function App() {
             const nn = new NeuralNet(nnParams);
     
             console.log("training...");
+            console.log({trainData})
     
             const [inputBatches, outputBatches] = mnist.getMiniBatches(nnParams.batchSize, trainData);
 
@@ -130,10 +138,10 @@ function App() {
             for (let e=0; e < 1; e++) {
                 inputBatches.forEach((batch, i) => {
                     const inputs = new Matrix(batch);
+
                     const normalised = inputs.map(v => ((+v / 255 ) * 0.99 ) + 0.01).transpose();
-        
+
                     const ys = new Matrix(outputBatches[i]).transpose();
-        
                     nn.feedForward(normalised);
         
                     nn.backpropagate(ys)
