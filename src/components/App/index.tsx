@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import DrawCanvas from '../DrawCanvas';
 import * as Papa from "papaparse";
-import Matrix from "../../matrix";
+import Matrix from "../../lib/matrix";
 import NeuralNet, { INeuralNet } from '../../neuralNet';
 import Settings from '../Settings';
 import { Container, GlobalStyle, OutputContainer } from './style';
@@ -10,21 +10,14 @@ import styled from 'styled-components';
 import * as mnist from "../../mnist";
 import { MnistProvider, useMnist } from '../../contexts/MnistContext';
 
-import { GPU } from 'gpu.js';
+import { GPU, KernelVariable } from 'gpu.js';
 
-
-
-
-// const train =  (nn: NeuralNet, inputBatches: number[][][], outputBatches: number[][][]) => new Promise<void>((resolve, reject) => {
-    
-
-//     resolve();
-// })
+const gpu = new GPU();
 
 
 export enum TrainingStatus {
     INCOMPLETE = "INCOMPLETE",
-    LOADING = "LOADING",
+    LOADING = "LOADING", 
     DONE = "DONE"
 }
 
@@ -70,11 +63,20 @@ function App() {
     const imgRef = useRef<HTMLCanvasElement>(null);
 
     const {trainData, testData } = useMnist();
-
+    
 
     useEffect(() => {
+ 
+        // function test() {
+        //     const m1 = new Matrix(1000, 1000);
+        //     const m2 = new Matrix(1000, 1000);
 
+        //     return Matrix.dot(m1, m2)._values;
+        // }
 
+        // const testKernal = gpu.createKernel(test).setOutput([1000, 1000])
+
+        // console.log(testKernal());
     }, [])
     //train
     useEffect(() => {
@@ -121,9 +123,9 @@ function App() {
    
             const nnParams = {
                 numOfInputs: 784, 
-                numOfHiddens: 1, 
+                numOfHiddens: 60, 
                 numOfOutputs: 10,
-                batchSize: 1
+                batchSize: 32
             }
     
             const nn = new NeuralNet(nnParams);
@@ -135,7 +137,7 @@ function App() {
 
             console.log({inputBatches})
 
-            for (let e=0; e < 1; e++) {
+            for (let e=0; e < 5; e++) {
                 inputBatches.forEach((batch, i) => {
                     const inputs = new Matrix(batch);
 
@@ -198,8 +200,8 @@ function App() {
             prediction: nn.getPrediction(), 
             confidence: Math.round(nn.a2._values[nn.getPrediction()][0] * 100 )
         })
-        console.log({digit})
-        drawDigit(digit); 
+        console.log("outside", {digit}) 
+        drawDigit(normalised._values.flat()); 
         
    
     }

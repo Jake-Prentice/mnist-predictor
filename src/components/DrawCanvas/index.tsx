@@ -29,55 +29,55 @@ const DrawCanvas = ({predict, drawDigit}: {
 
         const img = ctx2?.getImageData(0,0, 28, 28)!;
         
-        const inputs = []
+        const inputs = [1]
         // const inputs2 = [1];
 
         for (let i = 0; i < img.data.length; i+= 4) {
             inputs.push(img?.data[i + 3]); 
         }
 
-        console.log({inputs})
+        // console.log({inputs})
 
-        let distanceRow = 0;
-        let distanceCol = 0;
-        let numOfPixels = 0;
+        // let distanceRow = 0;
+        // let distanceCol = 0;
+        // let numOfPixels = 0;
 
-        for (let i=0; i < inputs.length; i++) {
+        // for (let i=0; i < inputs.length; i++) {
             
-            if (inputs[i] === 0) continue;
+        //     if (inputs[i] === 0) continue;
 
-            numOfPixels += 1;
+        //     numOfPixels += 1;
 
-            const row = Math.floor(i / 28);
+        //     const row = Math.floor(i / 28);
         
-            const col = i - (row * 28);
+        //     const col = i - (row * 28);
 
-            console.log({row,col})
+        //     console.log({row,col})
 
-            distanceRow += (13 - row );
-            distanceCol += (13 - col );
+        //     distanceRow += (13 - row );
+        //     distanceCol += (13 - col );
 
-        }
+        // }
 
-        const averageRow = Math.floor((distanceRow / numOfPixels)) 
-        const averageCol = Math.floor( (distanceCol / numOfPixels))
+        // const averageRow = Math.floor((distanceRow / numOfPixels)) 
+        // const averageCol = Math.floor( (distanceCol / numOfPixels))
 
-        console.log({averageCol, averageRow})
-        const inputs2 = Array.from({length: 784}, () => 0);
+        // console.log({averageCol, averageRow})
+        // const inputs2 = Array.from({length: 784}, () => 0);
 
-        for (let i=0; i < inputs.length; i++) {
-            if (inputs[i] === 0) continue;
+        // for (let i=0; i < inputs.length; i++) {
+        //     if (inputs[i] === 0) continue;
          
-            const newIndex = (i + (averageRow * 28) ) + averageCol;
-            console.log(newIndex)
-            inputs2[newIndex] = inputs[i];
-        }
+        //     const newIndex = (i + (averageRow * 28) ) + averageCol;
+        //     console.log(newIndex)
+        //     inputs2[newIndex] = inputs[i];
+        // }
 
-        inputs2.unshift(1);
+        // inputs2.unshift(1);
 
 
 
-        predict(inputs2);
+        predict(inputs); 
         // inputs2.push(...Array.from({length: 112}, _ => 0))
         // for (let i=0; i < inputs.length; i+=20) {
         //     inputs2.push(0,0,0,0);

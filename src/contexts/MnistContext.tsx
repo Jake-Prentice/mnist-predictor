@@ -61,12 +61,6 @@ export function MnistProvider({children}: React.PropsWithChildren<IProps>) {
 
     }, [])
 
-    useEffect(() => {
-        console.log(testData)
-    }, [testData])
-    useEffect(() => {
-        console.log("bere", {trainData})
-    }, [trainData])
 
     const value = {
         trainData,

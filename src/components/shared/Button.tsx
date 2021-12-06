@@ -7,6 +7,7 @@ const Button = styled.button`
     padding: 0.5rem 1.2rem;
     cursor: pointer;
 
+
     :hover {
         filter: brightness(0.9);
     }

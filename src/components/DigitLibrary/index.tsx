@@ -36,13 +36,13 @@ const DigitLibrary = () => {
         const imageData = ctx.getImageData(0, 0, 28, 28); 
         
         const digit = testData[digitIndex];
-        console.log({digit})
 
         for (var i = 0; i < digit.length; i++) {
-          imageData.data[i * 4] = digit[i];
-          imageData.data[i * 4 + 1] = digit[i];
-          imageData.data[i * 4 + 2] = digit[i];
-          imageData.data[i * 4 + 3] = 255;
+            const value = digit[i] > 0 ? 255 : 0;
+            imageData.data[i * 4] = value;
+            imageData.data[i * 4 + 1] = value;
+            imageData.data[i * 4 + 2] = value;
+            imageData.data[i * 4 + 3] = 255;
         }
 
         ctx.putImageData(imageData, 0, 0);

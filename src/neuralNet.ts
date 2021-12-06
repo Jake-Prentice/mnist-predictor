@@ -1,5 +1,5 @@
-import Matrix from "./matrix";
-
+import Matrix from "./lib/matrix";
+import {sigmoid} from "src/lib/NeuralNet/activations";
 
 export interface INeuralNet {
     numOfInputs: number;
@@ -11,12 +11,6 @@ export interface INeuralNet {
     b0?: Matrix,
     b1?: Matrix
 }
-
-const sigmoid = (m: Matrix, derivative: boolean = false) => {
-    return m.map(v => 1/ (1+ Math.exp(-v)) )
-}
-
-const Relu = (m: Matrix) => m.map(v => Math.max(0, v));
 
 
 class NeuralNet {
@@ -49,8 +43,8 @@ class NeuralNet {
         this.a0._values = inputs._values;
         // console.log(this.w0)
         // console.log(this.a0)
-        this.a1 = sigmoid(Matrix.dot(this.w0, this.a0).add(this.b0))
-        this.a2 = sigmoid(Matrix.dot(this.w1, this.a1).add(this.b1));
+        this.a1 = sigmoid.func(Matrix.dot(this.w0, this.a0).add(this.b0))
+        this.a2 = sigmoid.func(Matrix.dot(this.w1, this.a1).add(this.b1));
         // console.log({a2: this.a2})
         return this.a2;
     }
@@ -66,11 +60,11 @@ class NeuralNet {
     backpropagate(y: Matrix) {
         const lr = 0.1;
 
-        let d2 = y.subtract(this.a2).multiply(this.a2.map(v => v * (1 - v))) //delta 2
+        let d2 = y.subtract(this.a2).multiply(sigmoid.prime(this.a2)) //delta 2
         let dJdW1 = Matrix.dot(d2, this.a1.transpose());
 
         
-        let d1 = Matrix.dot(this.w1.transpose(), d2).multiply(this.a1.map(v => v * (1 - v)));
+        let d1 = Matrix.dot(this.w1.transpose(), d2).multiply(sigmoid.prime(this.a1));
         
         let dJdW0 = Matrix.dot(d1, this.a0.transpose());
 

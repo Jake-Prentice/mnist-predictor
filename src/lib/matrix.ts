@@ -6,6 +6,7 @@ class Matrix {
     rows: number;
     cols: number;
      _values: number[][];
+    gpu: GPU
 
     // get values() {
     //     return this._values;
@@ -20,6 +21,8 @@ class Matrix {
 
     constructor(...params: [number, number] | [number[][]]) {
 
+        this.gpu = new GPU();
+
         if (Array.isArray(params[0])) {
             const matrix = params[0];
             this.rows = matrix.length;
@@ -32,6 +35,8 @@ class Matrix {
             this._values = Array.from({length: this.rows}, _ => Array.from({length: this.cols}, _ => 1))
         }
     }
+
+
 
     map(cb: (v: number, i: number, j: number) => number) {
         return new Matrix( this._values.map((row, i) => row.map((v, j) => cb(v, i, j))) )
@@ -49,9 +54,7 @@ class Matrix {
       this._values = this.map(() => Math.random() * (max - min) + min)._values;
     }
 
-    test(gpu: GPU) {
-   
-    }
+    
 
     transpose() { 
         const T = new Matrix(this.cols, this.rows);
@@ -128,6 +131,7 @@ class Matrix {
             return this.map((v, i, j) => m instanceof Matrix ? cb(v, m._values[i][j]) : cb(v,m))  
         }
 
+        //try to broadcast
         if (this.rows === m.rows) {
             if (this.cols === 1) return m.map((v, i,j) => cb(this._values[i][0], v));
             if (m.cols === 1) return this.map((v, i,j) => cb(v, m._values[i][0]));
