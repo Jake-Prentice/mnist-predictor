@@ -1,5 +1,5 @@
 import Matrix from "./lib/matrix";
-import {sigmoid} from "src/lib/NeuralNet/activations";
+import {sigmoid} from "lib/NeuralNet/activations";
 
 export interface INeuralNet {
     numOfInputs: number;
