@@ -101,7 +101,7 @@ function App() {
             activation: activations.ReLU
         }))
 
-        const inputs = new Matrix(784, 1);
+        const inputs = new Matrix(785, 1);
 
         console.log("nn", nn.predict(inputs));
 

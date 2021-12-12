@@ -20,7 +20,9 @@ export abstract class Layer {
     get nodes() {return this._nodes!}
     
     set nodes(m: Matrix) {
-        if (m.rows !== this.numOfNodes) throw new Error();
+        if (m.rows !== this.numOfNodes) throw new Error(
+            `layer is supposed to have ${this.numOfNodes} nodes not ${m.rows}`
+        );
         this._nodes = m;
     }
 
