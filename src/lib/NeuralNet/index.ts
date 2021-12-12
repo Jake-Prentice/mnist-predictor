@@ -46,6 +46,10 @@ export default class NeuralNet {
         return this.topLayer.nodes;
     }
 
+    train() {
+        
+    }
+
     compile() {
         
     }

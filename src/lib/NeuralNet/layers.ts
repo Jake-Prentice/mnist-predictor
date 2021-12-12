@@ -54,20 +54,20 @@ interface ILayerDense  {
     numOfInputs?: number;
     numOfNodes: number;
     activation?: ActivationFunc;
-    useBias: boolean;
+    useBias?: boolean;
 }
 
 export class Dense extends Layer {
 
     activation?: ActivationFunc
-    private _useBias: boolean = true;
+    private _useBias: boolean;
     biases?: Matrix;
 
     constructor({
         activation, 
         numOfNodes,
         numOfInputs,
-        useBias
+        useBias = true
         
     }: ILayerDense) {    
         super({numOfInputs, numOfNodes});
