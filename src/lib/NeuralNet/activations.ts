@@ -8,7 +8,7 @@ type FunctionType<T> =
     never;
 
 
-class ActivationFunc {
+export class ActivationFunc {
   
     func: <T extends ValueType>(m: T) => FunctionType<T>;
     prime: <T extends ValueType>(m: T) => FunctionType<T>;
@@ -37,3 +37,8 @@ export const sigmoid = new ActivationFunc(
     v => 1/ (1+ Math.exp(-v)),
     v => v * (1 - v)
 );
+
+export const ReLU = new ActivationFunc(
+    v => v < 0 ? 0 : v,
+    v => v < 0 ? 0 : 1
+)

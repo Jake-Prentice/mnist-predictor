@@ -124,14 +124,13 @@ class Matrix {
     
     calc(m: Matrix | number, cb: (v1: number, v2: number) => number) {
 
-        if (
-            typeof m === "number" 
-            || m instanceof Matrix && (this.rows === m.rows && this.cols === m.cols)
-        ) {
-            return this.map((v, i, j) => m instanceof Matrix ? cb(v, m._values[i][j]) : cb(v,m))  
-        }
+        //broadcast single value
+        if (typeof m === "number") return this.map((v, i, j) => cb(v,m))  
+        
+        //shapes are the same
+        if (this.rows === m.rows && this.cols === m.cols) return this.map((v, i, j) => cb(v, m._values[i][j]))
 
-        //try to broadcast
+        //try to broadcast rows and columns
         if (this.rows === m.rows) {
             if (this.cols === 1) return m.map((v, i,j) => cb(this._values[i][0], v));
             if (m.cols === 1) return this.map((v, i,j) => cb(v, m._values[i][0]));

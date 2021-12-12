@@ -10,6 +10,10 @@ import styled from 'styled-components';
 import * as mnist from "../../mnist";
 import { MnistProvider, useMnist } from '../../contexts/MnistContext';
 
+import neuralNet from "lib/NeuralNet";
+import * as layers from "lib/NeuralNet/layers";
+import * as activations from "lib/NeuralNet/activations"
+
 import { GPU, KernelVariable } from 'gpu.js';
 
 const gpu = new GPU();
@@ -77,6 +81,31 @@ function App() {
         // const testKernal = gpu.createKernel(test).setOutput([1000, 1000])
 
         // console.log(testKernal());
+    }, [])
+
+
+    useEffect(() => {
+        const nn = new neuralNet();
+
+        nn.addLayer(new layers.Input({numOfNodes: 784}))
+        nn.addLayer(new layers.Dense({
+            numOfNodes: 60,
+
+            useBias: true,
+            activation: activations.ReLU
+        }))
+
+        nn.addLayer(new layers.Dense({
+            numOfNodes: 10,
+            useBias: false,
+            activation: activations.ReLU
+        }))
+
+        const inputs = new Matrix(784, 1);
+
+        console.log("nn", nn.predict(inputs));
+
+
     }, [])
     //train
     useEffect(() => {
