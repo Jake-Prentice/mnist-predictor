@@ -1,67 +1,103 @@
 import Matrix from "lib/matrix";
-import { ActivationFunc, sigmoid } from "./activations";
+import { ActivationFunc, sigmoid, Activation } from "./activations";
 
 
+
+//Base layer
 interface ILayer {
     numOfNodes: number;
     numOfInputs?: number;
 }
 
+interface IForward {
+    inputNodes: Matrix;
+}
+
+interface IBackward {
+    passBackError: Matrix;
+}
+
 
 export abstract class Layer {
     
-    private _nodes?: Matrix;
     weights?: Matrix;
-    readonly numOfNodes: number;
+    dWeights?: Matrix;
     //only for first layer
     numOfInputs?: number;
     isBuilt: boolean = false;
+    passBackError?: Matrix;
+    protected _outputNodes?: Matrix;
+    protected _inputNodes?: Matrix;
+    readonly numOfNodes: number;
 
-    get nodes() {return this._nodes!}
-    
-    set nodes(m: Matrix) {
-        if (m.rows !== this.numOfNodes) throw new Error(
-            `layer is supposed to have ${this.numOfNodes} nodes not ${m.rows}`
-        );
-        this._nodes = m;
+    get outputNodes() {
+        return this._outputNodes!;
     }
+
+    set outputNodes(m: Matrix) {
+        if (m.rows !== this.numOfNodes) throw new Error(
+            `output layer is supposed to have ${this.numOfNodes} nodes not ${m.rows}`
+        );
+        this.outputNodes = m;
+    }
+
+    get inputNodes() {
+        return this._inputNodes!;
+    }
+
+    
+    set inputNodes(m: Matrix) {
+        if (m.rows !== this.numOfNodes) throw new Error(
+            `input layer is supposed to have ${this.numOfNodes} nodes not ${m.rows}`
+        );
+        this.inputNodes = m;
+    }
+
 
     constructor({numOfNodes, numOfInputs}: ILayer) {
         this.numOfNodes = numOfNodes;
         this.numOfInputs = numOfInputs;
     }
 
-    feedForward(previousLayer: Layer) {return this._nodes};
+    forward({inputNodes}: IForward) {
+        this._inputNodes = inputNodes;
+    };
+
+    backward(props: IBackward): void {};
     build(prevNumOfNodes: number) { this.isBuilt = true };
 }
 
-interface IInput {
-    batchSize?: number;
-    numOfNodes: number;
-}
+
+
+//Input layer
 
 export class Input extends Layer {
-    
-    batchSize?: number;
 
-    constructor({batchSize, ...rest}: IInput) {
-        super(rest);
-        this.batchSize = batchSize ? batchSize : 1;
+    constructor(props: ILayer) {
+        super(props);
+    }
+    
+    forward({ inputNodes }: IForward) {
+        super.forward({inputNodes});
+        this.outputNodes = this.inputNodes;
     }
 }
 
+
+//Dense Layer
 interface ILayerDense  {
     numOfInputs?: number;
     numOfNodes: number;
-    activation?: ActivationFunc;
+    activation: Activation;
     useBias?: boolean;
 }
 
 export class Dense extends Layer {
 
-    activation?: ActivationFunc
+    activation: Activation
     private _useBias: boolean;
     biases?: Matrix;
+    dBiases?: Matrix;
 
     constructor({
         activation, 
@@ -85,24 +121,44 @@ export class Dense extends Layer {
                 {length: this.numOfNodes},
                 _ => [0.01]
             )); 
+
+            //initialise so that there is shape validation
+            this.dBiases = new Matrix(this.biases.rows, this.biases.cols);
         }
 
         this.isBuilt = true;
 
+
     }
 
-    feedForward(previousLayer: Layer) {
+    forward({inputNodes}: IForward) {
+        super.forward({inputNodes});
+
         if (!this.isBuilt) throw new Error("layer not built");
     
-        let output = Matrix.dot(this.weights!, previousLayer.nodes);
+        let output = Matrix.dot(this.weights!, inputNodes);
 
         if (this._useBias) output = output.add(this.biases!) 
 
-        if (this.activation) output = this.activation.func(output);
+        if (this.activation) output = this.activation.forward(output);
 
-        this.nodes = output;
+        this.outputNodes = output;
 
         return output;
+    }
+
+    backward({passBackError}: IBackward) {
+        if (!this.isBuilt) throw new Error();
+        
+        const delta = this.activation.backward(passBackError)
+        
+        //dJdW
+        this.dWeights = Matrix.dot(delta, this.inputNodes.transpose())
+
+        if (this._useBias) this.dBiases = delta.sumRows(); 
+
+        //will be used by the next layer back to calculate their delta
+        this.passBackError = Matrix.dot(this.weights!.transpose(), delta);
     }
 
 }
@@ -112,3 +168,11 @@ export {}
 
 
 // nn.addLayer(new LayerDense())
+
+// layer.nodes.
+
+/* 
+    optimiser: 
+        +learningRate
+        +update(layer)
+*/

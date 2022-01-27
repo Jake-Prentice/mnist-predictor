@@ -7,6 +7,44 @@ type FunctionType<T> =
     T extends number ? number :
     never;
 
+const calc = (m: ValueType, cb: (v: number) => number) => {
+    if (m instanceof Matrix) return m.map(v => cb(v)) 
+    return cb(m);
+}
+
+export abstract class Activation { 
+
+    input?: Matrix;
+    output?: Matrix;
+    delta?: Matrix;
+
+    abstract forward(input: Matrix): Matrix;
+    
+    abstract backward(dValue: Matrix): Matrix; 
+}
+
+
+class Sigmoid extends Activation { 
+
+    forward(input: Matrix) {
+        this.input = input;
+        this.output = input.map(v => 
+            1/ (1+ Math.exp(-v)) 
+        )
+
+        return this.output;
+    }
+
+    backward(dValue: Matrix) {
+        if (!this.input || !this.output) throw new Error();
+        
+        const dSigmoid = this.output.map(v => v * (1 - v) )
+        this.delta = dValue.multiply(dSigmoid);
+
+        return this.delta;
+    }
+}
+
 
 export class ActivationFunc {
   
@@ -30,7 +68,6 @@ export class ActivationFunc {
         };
     }
 }
-
 
 
 export const sigmoid = new ActivationFunc(

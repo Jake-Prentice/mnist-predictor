@@ -48,6 +48,7 @@ export function MnistProvider({children}: React.PropsWithChildren<IProps>) {
     useEffect(() => {
 
         (async () => {
+            //just remove empty spaces
             console.log("Loading csvs...")
             await fetchMnistCsv("./data/mnist_train.csv", (results) => {
                 setTrainData(results.slice(1).slice(0,-1));
