@@ -36,7 +36,9 @@ class Matrix {
         }
     }
 
-
+    static isSameShape(m1: Matrix, m2: Matrix) {
+        return (m1.rows === m2.rows) && (m1.cols === m2.cols);
+    }
 
     map(cb: (v: number, i: number, j: number) => number) {
         return new Matrix( this._values.map((row, i) => row.map((v, j) => cb(v, i, j))) )
@@ -55,6 +57,13 @@ class Matrix {
     }
 
     
+    static transposeArray(arr: number[][]) {
+        for (let i=0; i < arr.length; i++) {
+            for (let j=0; j < arr[0].length; j++) {
+                arr[j][i] = arr[i][j];
+            }
+        }
+    }
 
     transpose() { 
         const T = new Matrix(this.cols, this.rows);
@@ -63,7 +72,7 @@ class Matrix {
     }
 
     static convertArrayToMatrix(arr: number[] | string[]) {
-        return arr.map(v => [+v]);
+        return new Matrix(arr.map(v => [+v]));
     }
 
     static dot(m1: Matrix, m2: Matrix) {

@@ -1,12 +1,9 @@
 import Matrix from "lib/matrix";
 import { ActivationFunc, sigmoid, Activation } from "./activations";
 
-
-
 //Base layer
 interface ILayer {
     numOfNodes: number;
-    numOfInputs?: number;
 }
 
 interface IForward {
@@ -23,7 +20,6 @@ export abstract class Layer {
     weights?: Matrix;
     dWeights?: Matrix;
     //only for first layer
-    numOfInputs?: number;
     isBuilt: boolean = false;
     passBackError?: Matrix;
     protected _outputNodes?: Matrix;
@@ -54,23 +50,19 @@ export abstract class Layer {
     }
 
 
-    constructor({numOfNodes, numOfInputs}: ILayer) {
+    constructor({numOfNodes}: ILayer) {
         this.numOfNodes = numOfNodes;
-        this.numOfInputs = numOfInputs;
     }
 
     forward({inputNodes}: IForward) {
         this._inputNodes = inputNodes;
     };
-
+ 
     backward(props: IBackward): void {};
     build(prevNumOfNodes: number) { this.isBuilt = true };
 }
 
-
-
 //Input layer
-
 export class Input extends Layer {
 
     constructor(props: ILayer) {
@@ -85,16 +77,14 @@ export class Input extends Layer {
 
 
 //Dense Layer
-interface ILayerDense  {
-    numOfInputs?: number;
-    numOfNodes: number;
-    activation: Activation;
+interface ILayerDense extends ILayer  {
+    activation?: Activation;
     useBias?: boolean;
 }
 
 export class Dense extends Layer {
 
-    activation: Activation
+    activation?: Activation
     private _useBias: boolean;
     biases?: Matrix;
     dBiases?: Matrix;
@@ -102,11 +92,10 @@ export class Dense extends Layer {
     constructor({
         activation, 
         numOfNodes,
-        numOfInputs,
         useBias = true
         
     }: ILayerDense) {    
-        super({numOfInputs, numOfNodes});
+        super({numOfNodes});
         this.activation = activation;
         this._useBias = useBias
     }
@@ -114,6 +103,8 @@ export class Dense extends Layer {
     build(prevNumOfNodes: number) {
         
         this.weights = new Matrix(this.numOfNodes, prevNumOfNodes);
+        this.dWeights = new Matrix(this.weights.rows, this.weights.cols);
+
         this.weights.initRand(-1, 1);
         
         if (this._useBias) {
@@ -134,7 +125,7 @@ export class Dense extends Layer {
     forward({inputNodes}: IForward) {
         super.forward({inputNodes});
 
-        if (!this.isBuilt) throw new Error("layer not built");
+        if (!this.isBuilt) this.build(inputNodes.rows);
     
         let output = Matrix.dot(this.weights!, inputNodes);
 
@@ -148,9 +139,11 @@ export class Dense extends Layer {
     }
 
     backward({passBackError}: IBackward) {
-        if (!this.isBuilt) throw new Error();
+        if (!this.isBuilt) throw new Error("layer needs to be built first before layer can backpropagate");
         
-        const delta = this.activation.backward(passBackError)
+        const delta = this.activation 
+            ? this.activation.backward(passBackError) 
+            : passBackError; 
         
         //dJdW
         this.dWeights = Matrix.dot(delta, this.inputNodes.transpose())

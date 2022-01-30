@@ -20,7 +20,7 @@ export abstract class Activation {
 
     abstract forward(input: Matrix): Matrix;
     
-    abstract backward(dValue: Matrix): Matrix; 
+    abstract backward(passBackError: Matrix): Matrix; 
 }
 
 
@@ -35,11 +35,11 @@ class Sigmoid extends Activation {
         return this.output;
     }
 
-    backward(dValue: Matrix) {
+    backward(passBackError: Matrix) {
         if (!this.input || !this.output) throw new Error();
         
         const dSigmoid = this.output.map(v => v * (1 - v) )
-        this.delta = dValue.multiply(dSigmoid);
+        this.delta = passBackError.multiply(dSigmoid);
 
         return this.delta;
     }

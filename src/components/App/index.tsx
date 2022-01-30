@@ -85,25 +85,25 @@ function App() {
 
 
     useEffect(() => {
-        const nn = new neuralNet();
+        // const nn = new neuralNet();
 
-        nn.addLayer(new layers.Input({numOfNodes: 784}))
-        nn.addLayer(new layers.Dense({
-            numOfNodes: 60,
+        // nn.addLayer(new layers.Input({numOfNodes: 784}))
+        // nn.addLayer(new layers.Dense({
+        //     numOfNodes: 60,
 
-            useBias: true,
-            activation: activations.ReLU
-        }))
+        //     useBias: true,
+        //     activation: activations.ReLU
+        // }))
 
-        nn.addLayer(new layers.Dense({
-            numOfNodes: 10,
-            useBias: false,
-            activation: activations.ReLU
-        }))
+        // nn.addLayer(new layers.Dense({
+        //     numOfNodes: 10,
+        //     useBias: false,
+        //     activation: activations.ReLU
+        // }))
 
-        const inputs = new Matrix(784, 10);
+        // const inputs = new Matrix(784, 10);
 
-        console.log("nn", nn.predict(inputs));
+        // console.log("nn", nn.predict(inputs));
 
 
     }, [])
@@ -187,6 +187,30 @@ function App() {
             setTrainingStatus(TrainingStatus.DONE);
 
             console.log("done");
+
+            /* 
+            
+                const [inputs, outputs] = mnist.loadData();
+
+                const inputs = new Matrix(inputs);
+                const outputs = new Matrix(outputs);
+                
+                const normalised = inputs.map(v => ((+v / 255 ) * 0.99 ) + 0.01).transpose();
+
+                const nn = new NeuralNet();
+
+                nn.addLayer(new layers.Dense());
+                nn.addLayer(new layers.Dense());
+                nn.addLayer(new layers.Dense());
+
+                nn.train({
+                    epochs: 10,
+                    batchSize: 32,
+                    X: normalised,
+                    y: outputs
+                })
+
+            */
    
 
 
@@ -218,7 +242,7 @@ function App() {
 
         const nn = new NeuralNet(nnData);
 
-        const input = new Matrix(Matrix.convertArrayToMatrix( digit.slice(1) )); 
+        const input = Matrix.convertArrayToMatrix( digit.slice(1))
         const normalised = input.map(v => ((+v / 255 ) * 0.99 ) + 0.01)
 
         nn.feedForward(normalised);

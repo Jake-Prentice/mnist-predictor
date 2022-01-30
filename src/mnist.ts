@@ -3,11 +3,9 @@ import { shuffleArray } from "./utils";
 
 export const getMiniBatches = (size: number, dataSet: number[][]): [number[][][], number[][][]] => {
 
-    console.log({dataSet})
     let shuffled = JSON.parse(JSON.stringify(dataSet));
     shuffleArray(shuffled);
 
-    
     const inputBatches: number[][][] = [];
 
     for (let i=0; i < (shuffled.length - 1 )/ size; i++) {
