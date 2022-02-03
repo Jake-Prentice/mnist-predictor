@@ -81,7 +81,22 @@ function App() {
         // const testKernal = gpu.createKernel(test).setOutput([1000, 1000])
 
         // console.log(testKernal());
-    }, [])
+
+
+        // const arr = [[1,2,3],[4,5,6],[7,8,9],[10,11,12],[13,14,15]];
+        // const t = new Matrix(arr, true);
+        // const nn = new neuralNet();
+
+        const m1 = new Matrix([[1,2,3],
+                                [4,5,6]])
+    
+        const m2 = new Matrix([[2,3,2],
+                                [2,3,2]])
+
+        console.log(m1.toPow(2));
+    
+        }, [])
+
 
 
     useEffect(() => {

@@ -1,6 +1,9 @@
 import { GPU } from "gpu.js";
 
+// (rows, cols, passByRef) | (values, passByRef)
+type MatrixParamsType = [number, number, boolean?] | [number[][], boolean?];
 
+                
 class Matrix {
 
     rows: number;
@@ -8,30 +11,37 @@ class Matrix {
      _values: number[][];
     gpu: GPU
 
-    // get values() {
-    //     return this._values;
-    // }
+    get values() {
+        return this._values;
+    }
     
-    // set values(theValues: number[][]) {
-    //     if (this.rows !== theValues.length || this.cols !== theValues[0].length) {
-    //         throw new Error(`matrix is of dimensions (${this.rows} x ${this.cols}) not (${theValues.length} x ${theValues[0].length})`)
-    //     }
-    //     this._values = theValues;
-    // }
+    set values(theValues: number[][]) {
+        if (this.rows !== theValues.length || this.cols !== theValues[0].length) {
+            throw new Error(`matrix is of dimensions (${this.rows} x ${this.cols}) not (${theValues.length} x ${theValues[0].length})`)
+        }
+        this._values = theValues;
+    }
 
-    constructor(...params: [number, number] | [number[][]]) {
+    constructor(...params: MatrixParamsType) {
 
         this.gpu = new GPU();
 
-        if (Array.isArray(params[0])) {
+        let passByRef = typeof params[params.length - 1] === "boolean" ?? false;
+        console.log(passByRef)
+        //if values of the matrix are passed in 
+        if (Array.isArray(params[0]))  {
             const matrix = params[0];
             this.rows = matrix.length;
             this.cols = matrix[0].length;
             this._values = matrix;
         }else {
-            if (params[0] < 1 || params[1]! < 1) throw new Error();
-            this.rows = params[0];
-            this.cols = params[1]!;
+            //TODO - sort this out!
+            const rows = params[0];
+            const cols = params[1] as number;
+
+            if (rows < 1 || cols! < 1) throw new Error();
+            this.rows = rows;
+            this.cols = cols;
             this._values = Array.from({length: this.rows}, _ => Array.from({length: this.cols}, _ => 1))
         }
     }
@@ -129,7 +139,6 @@ class Matrix {
         return new Matrix(average)
     }
 
-
     
     calc(m: Matrix | number, cb: (v1: number, v2: number) => number) {
 
@@ -169,6 +178,11 @@ class Matrix {
 
     divide(m: Matrix | number) {
         return this.calc(m, (v1, v2) => v1 / v2);
+    }
+
+    
+    toPow(m: Matrix | number) {
+        return this.calc(m, (v1, v2) => v1 ** v2);
     }
     
 }

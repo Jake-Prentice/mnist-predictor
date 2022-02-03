@@ -1,18 +1,13 @@
 import Matrix from "lib/matrix";
 import { Input, Layer } from "./layers";
-import { ILossFunction } from "./losses";
+import { IBackward, ILossFunction } from "./losses";
 import { Optimiser } from "./optimisers";
 
 interface ITrain {
     epochs: number; 
-    x: Matrix;
-    y: Matrix;
-    batchSize: number;
-}
-
-interface IBackward {
-    y: Matrix;
-    outputs: Matrix;
+    x: number[][];
+    y: number[][];
+    batchSize?: number;
 }
 
 interface ICompile {
@@ -59,47 +54,64 @@ export default class NeuralNet {
         return this.outputLayer.outputNodes;
     }
 
+    getBatch(data: number[][], batchSize: number, step: number) {
+        const batch=[];
+        for (let i=step * batchSize; i < (step + 1) * batchSize; i++) {
+            if (i >= data.length) break;
+            batch.push(data[i]);
+        }
+
+        return batch;
+    }
+
     //handles splitting inputs and outputs into batches as well
+    // note - X and Y are arrays not matrices
     train({
         epochs,
-        batchSize=1,
+        batchSize,
         x,
         y
     }: ITrain) {
         if (!this.isCompiled) throw new Error("Neural network must be compiled before training");
-        if (!Matrix.isSameShape(x,y)) throw new Error("x, y must be the same shape"); 
-        if (batchSize < 1 || batchSize > x.cols) throw new Error(` 1 < batchSize < ${x.cols}`);
+        if (x.length !== y.length) throw new Error("every input must have an output");
+        //don't need to check y.length because x and y should be the same length
+        if (batchSize && (batchSize > x.length || batchSize < 1 ) ) throw new Error(" batch size needs to be within range: 1 <= batchSize < x/y")
 
+        //if batchSize is undefined, it defaults to a batch of all the training data
         let numOfTrainingSteps=1;
         let xBatch: Matrix;
         let yBatch: Matrix
 
-        if (batchSize > 1) {
-            numOfTrainingSteps = Math.floor()
+        if (batchSize) {
+            numOfTrainingSteps = Math.floor(x.length / batchSize);
+
+            //if there aren't enough inputs to make a full batch at the end
+            if (numOfTrainingSteps * batchSize < x.length) numOfTrainingSteps += 1;
         }
 
         const trainableLayers = this.getTrainableLayers();
         
         for (let epoch=0; epoch < epochs; epoch++) {
         
-            for (let step=0; step < numOfTrainingSteps; step+=batchSize) {
+            for (let step=0; step < numOfTrainingSteps; step+=1) {
                 
-                //create batches
-                if (batchSize > 1) {
-
-
-
+                //get current batch
+                if (batchSize) {
+                    xBatch = new Matrix( this.getBatch(x, batchSize, step) )
+                    yBatch = new Matrix( this.getBatch(y, batchSize, step) )
                 }else {
-                    xBatch = x;
-                    yBatch = y;
+                    xBatch = new Matrix(x);
+                    yBatch = new Matrix(y);
                 }
 
-
+                xBatch = xBatch.transpose();
+                yBatch = yBatch.transpose();
 
                 //feed forward inputs get predicted output (a) 
-                // const output = this.forward(X);
+                const outputs = this.forward(xBatch);
 
-                
+                //backpropagation
+                this.backward({y: yBatch, outputs})
 
                 //update weights and biases
                 trainableLayers.forEach(layer => {
@@ -113,7 +125,7 @@ export default class NeuralNet {
     backward({y, outputs}: IBackward) {
         if (!this.isCompiled) throw new Error(); 
 
-        const dLoss = this.loss!.backward();
+        const dLoss = this.loss!.backward({y, outputs});
             
         for (let i=this.layers.length - 1; i > 1; i--) {
             const nextLayer: Layer | undefined = this.layers?.[i - 1];
@@ -151,10 +163,7 @@ export default class NeuralNet {
 
 export {};
 
-
-
 /* 
-
 
 train() {
     
@@ -180,7 +189,6 @@ train() {
         //to pass back to previous layer
         this.dInputs = Matrix.dot(this.weights.transpose(), delta);
     }
-
 
 */
 
@@ -211,8 +219,6 @@ train() {
         inputs,
         outputs
     })
-
-
 
 
 */
