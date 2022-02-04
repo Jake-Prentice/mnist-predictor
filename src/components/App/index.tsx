@@ -15,6 +15,8 @@ import * as layers from "lib/NeuralNet/layers";
 import * as activations from "lib/NeuralNet/activations"
 
 import { GPU, KernelVariable } from 'gpu.js';
+import { SSE } from 'lib/NeuralNet/losses';
+import { SGD } from 'lib/NeuralNet/optimisers';
 
 const gpu = new GPU();
 
@@ -100,25 +102,7 @@ function App() {
 
 
     useEffect(() => {
-        // const nn = new neuralNet();
-
-        // nn.addLayer(new layers.Input({numOfNodes: 784}))
-        // nn.addLayer(new layers.Dense({
-        //     numOfNodes: 60,
-
-        //     useBias: true,
-        //     activation: activations.ReLU
-        // }))
-
-        // nn.addLayer(new layers.Dense({
-        //     numOfNodes: 10,
-        //     useBias: false,
-        //     activation: activations.ReLU
-        // }))
-
-        // const inputs = new Matrix(784, 10);
-
-        // console.log("nn", nn.predict(inputs));
+   
 
 
     }, [])
@@ -164,44 +148,78 @@ function App() {
 
         // })
 
-   
-            const nnParams = {
-                numOfInputs: 784, 
-                numOfHiddens: 60, 
-                numOfOutputs: 10,
-                batchSize: 32
-            }
+
+            // const nnParams = {
+            //     numOfInputs: 784, 
+            //     numOfHiddens: 60, 
+            //     numOfOutputs: 10,
+            //     batchSize: 32
+            // }
     
-            const nn = new NeuralNet(nnParams);
+            // const nn = new NeuralNet(nnParams);
     
-            console.log("training...");
-            console.log({trainData})
+            // console.log("training...");
+            // console.log({trainData})
     
-            const [inputBatches, outputBatches] = mnist.getMiniBatches(nnParams.batchSize, trainData);
+            // const [inputBatches, outputBatches] = mnist.getMiniBatches(nnParams.batchSize, trainData);
 
-            console.log({inputBatches})
+            // console.log({inputBatches})
 
-            for (let e=0; e < 5; e++) {
-                inputBatches.forEach((batch, i) => {
-                    const inputs = new Matrix(batch);
+            // for (let e=0; e < 5; e++) {
+            //     inputBatches.forEach((batch, i) => {
+            //         const inputs = new Matrix(batch);
 
-                    const normalised = inputs.map(v => ((+v / 255 ) * 0.99 ) + 0.01).transpose();
+            //         const normalised = inputs.map(v => ((+v / 255 ) * 0.99 ) + 0.01).transpose();
 
-                    const ys = new Matrix(outputBatches[i]).transpose();
-                    nn.feedForward(normalised);
+            //         const ys = new Matrix(outputBatches[i]).transpose();
+            //         nn.feedForward(normalised);
         
-                    nn.backpropagate(ys)
+            //         nn.backpropagate(ys)
         
-                    console.log(i);
+            //         console.log(i);
         
-                })
-            }
+            //     })
+            // }
                 
-            setNNData({...nnParams, w0: nn.w0, w1: nn.w1, b0: nn.b0, b1: nn.b1})
+            // setNNData({...nnParams, w0: nn.w0, w1: nn.w1, b0: nn.b0, b1: nn.b1})
 
-            setTrainingStatus(TrainingStatus.DONE);
+            // setTrainingStatus(TrainingStatus.DONE);
 
-            console.log("done");
+            // console.log("done");
+
+
+            const nn = new neuralNet();
+
+            const x = trainData.map(r => r.map(v => ((+v / 255 ) * 0.99 ) + 0.01))
+
+            nn.addLayer(new layers.Input({numOfNodes: 784}))
+
+            nn.addLayer(new layers.Dense({
+                numOfNodes: 60,
+                useBias: true,
+                activation: new activations.Sigmoid()
+            }))
+
+            nn.addLayer(new layers.Dense({
+                numOfNodes: 10, //note check 
+                useBias: false,
+                activation: new activations.Sigmoid()
+            }))
+
+            nn.compile({
+                loss: SSE,
+                optimiser: new SGD({}),
+            })
+
+            nn.train({
+                epochs: 1,
+                batchSize: 32,
+                x,
+                y: testData,
+                printEvery: 10
+            })
+
+
 
             /* 
             

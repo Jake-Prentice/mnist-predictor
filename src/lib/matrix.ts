@@ -27,7 +27,6 @@ class Matrix {
         this.gpu = new GPU();
 
         let passByRef = typeof params[params.length - 1] === "boolean" ?? false;
-        console.log(passByRef)
         //if values of the matrix are passed in 
         if (Array.isArray(params[0]))  {
             const matrix = params[0];

@@ -34,7 +34,7 @@ export abstract class Layer {
         if (m.rows !== this.numOfNodes) throw new Error(
             `output layer is supposed to have ${this.numOfNodes} nodes not ${m.rows}`
         );
-        this.outputNodes = m;
+        this._outputNodes = m;
     }
 
     get inputNodes() {

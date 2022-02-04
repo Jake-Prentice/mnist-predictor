@@ -20,7 +20,7 @@ export const SSE: ILossFunction = {
     },
 
     backward:({y, outputs}) => {
-        return new Matrix(2,2,false)
+        return y.subtract(outputs);
     }
 }
 

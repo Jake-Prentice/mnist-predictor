@@ -8,6 +8,7 @@ interface ITrain {
     x: number[][];
     y: number[][];
     batchSize?: number;
+    printEvery?: number;
 }
 
 interface ICompile {
@@ -42,12 +43,13 @@ export default class NeuralNet {
         */
         this.inputLayer.forward({inputNodes})
 
+        console.log("hereheeh")
         for (let i=1; i < this.layers.length; i++) {
             const currentLayer = this.layers[i];
             const prevLayer = this.layers[i - 1];
 
             currentLayer.forward({
-                inputNodes: prevLayer.inputNodes
+                inputNodes: prevLayer.outputNodes
             });
         }
 
@@ -70,10 +72,11 @@ export default class NeuralNet {
         epochs,
         batchSize,
         x,
-        y
+        y,
+        printEvery=10
     }: ITrain) {
         if (!this.isCompiled) throw new Error("Neural network must be compiled before training");
-        if (x.length !== y.length) throw new Error("every input must have an output");
+        if (x.length !== y.length) throw new Error(`every input must have an output, got x.length ${x.length} and y.length ${y.length}`);
         //don't need to check y.length because x and y should be the same length
         if (batchSize && (batchSize > x.length || batchSize < 1 ) ) throw new Error(" batch size needs to be within range: 1 <= batchSize < x/y")
 
@@ -94,6 +97,10 @@ export default class NeuralNet {
         for (let epoch=0; epoch < epochs; epoch++) {
         
             for (let step=0; step < numOfTrainingSteps; step+=1) {
+                
+                if (step % printEvery === 0) {
+                    console.log(`training step ${step}`);
+                }
                 
                 //get current batch
                 if (batchSize) {
@@ -127,10 +134,11 @@ export default class NeuralNet {
 
         const dLoss = this.loss!.backward({y, outputs});
             
-        for (let i=this.layers.length - 1; i > 1; i--) {
-            const nextLayer: Layer | undefined = this.layers?.[i - 1];
+        for (let i=this.layers.length - 1; i > 0; i--) {
+            const nextLayer: Layer | undefined = this.layers?.[i + 1];
             const currentLayer = this.layers[i];
             
+            // console.log({dLoss, nextLayer, i})
             const passBackError = !nextLayer ? dLoss : nextLayer.passBackError!;
             currentLayer.backward({passBackError});
         }
