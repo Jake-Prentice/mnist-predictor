@@ -39,7 +39,6 @@ export class Sigmoid extends Activation {
         if (!this.input || !this.output) throw new Error();
         
         const dSigmoid = this.output.map(v => v * (1 - v) )
-        console.log({passBackError})
         this.delta = passBackError.multiply(dSigmoid);
 
         return this.delta;

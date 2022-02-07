@@ -9,7 +9,7 @@ export abstract class Optimiser {
     learningRate: number;
   
     constructor({learningRate}: IOptimiser) {
-        this.learningRate = learningRate || 0.01;
+        this.learningRate = learningRate || 0.1;
     }
     abstract update(layer: Layer): void;
 }
@@ -26,8 +26,8 @@ export class SGD extends Optimiser {
     
         // weights += -learning_rate * dweights
         // biases += -learning_rate * dbiases
-        layer.weights!.add( layer.dWeights!.multiply(-1 * this.learningRate) );
-        if (layer.biases) layer.biases.add( layer.biases.multiply( -1 * this.learningRate) );
+        layer.weights = layer.weights!.add( layer.dWeights!.multiply(-1 * this.learningRate) );
+        if (layer.biases) layer.biases = layer.biases.add( layer.dBiases!.multiply( -1 * this.learningRate) );
         
     }
 }

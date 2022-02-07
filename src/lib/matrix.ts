@@ -104,6 +104,12 @@ class Matrix {
         return result;
     }
 
+    sum() {
+        let total=0;
+        this.forIJ(v => total += v);
+        return total;
+    }
+
     sumRows() {
         const sums: number[][] = [];
         

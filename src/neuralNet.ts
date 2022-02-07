@@ -29,12 +29,12 @@ class NeuralNet {
         this.a0 = new Matrix(numOfInputs, batchSize);
 
         this.w0 = new Matrix(numOfHiddens, numOfInputs);
-        if (w0) this.w0 = w0; else this.w0.initRand(-1,1);
+        if (w0) this.w0 = w0; else this.w0.initRand(0.1, 0.1);
         
         this.b0 = b0 ? b0 : new Matrix(Array.from({length: numOfHiddens}, _ => [0.01])); 
 
         this.w1 = new Matrix(numOfOutputs, numOfHiddens) 
-        if (w1) this.w1 = w1; else this.w1.initRand(-1,1);
+        if (w1) this.w1 = w1; else this.w1.initRand(0.1,0.1);
 
         this.b1 = b1 ? b1 : new Matrix(Array.from({length: numOfOutputs}, _ => [0.01])); 
     }
@@ -62,7 +62,6 @@ class NeuralNet {
 
         let d2 = y.subtract(this.a2).multiply(sigmoid.prime(this.a2)) //delta 2
         let dJdW1 = Matrix.dot(d2, this.a1.transpose());
-
         
         let d1 = Matrix.dot(this.w1.transpose(), d2).multiply(sigmoid.prime(this.a1));
         

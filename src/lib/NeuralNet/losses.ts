@@ -8,7 +8,7 @@ interface IForward {
 }
 
 export interface ILossFunction {
-    forward: (props: IForward) => void;
+    forward: (props: IForward) => number;
     backward: (props: IBackward) => Matrix;
 }
 
@@ -16,11 +16,11 @@ export interface ILossFunction {
 export const SSE: ILossFunction = {
     forward: ({y, outputs}) => {
         // 0.5 * (y-a)**2
-        y.subtract(outputs).toPow(2).multiply(0.5);
+        return y.subtract(outputs).toPow(2).multiply(0.5).sum();
     },
 
     backward:({y, outputs}) => {
-        return y.subtract(outputs);
+        return y.subtract(outputs).multiply(-1);
     }
 }
 

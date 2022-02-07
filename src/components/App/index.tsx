@@ -20,13 +20,11 @@ import { SGD } from 'lib/NeuralNet/optimisers';
 
 const gpu = new GPU();
 
-
 export enum TrainingStatus {
     INCOMPLETE = "INCOMPLETE",
     LOADING = "LOADING", 
     DONE = "DONE"
 }
-
 
 const ResultsContainer = styled.div`
     height: 30%;
@@ -44,7 +42,6 @@ interface IResults {
     confidence?: number;
 }
 
-
 const Results = ({results}: {results: IResults}) => {
     return (
         <ResultsContainer>
@@ -53,8 +50,6 @@ const Results = ({results}: {results: IResults}) => {
         </ResultsContainer>
     )
 }
-
-
 
 function App() {
     
@@ -65,132 +60,34 @@ function App() {
 
     const [nnData, setNNData] = useState<INeuralNet>()
     const [results, setResults] = useState<IResults>({});
+    const [nn2, setNN2] = useState<neuralNet>();
+
 
     const imgRef = useRef<HTMLCanvasElement>(null);
 
     const {trainData, testData } = useMnist();
     
-
+    console.log("rerender")
     useEffect(() => {
- 
-        // function test() {
-        //     const m1 = new Matrix(1000, 1000);
-        //     const m2 = new Matrix(1000, 1000);
+        console.log({nn2})
+        if (!nn2) return;
+                    const [testX, testY] = mnist.getData(testData);
+            const testXNorm = testX[0].map(v => [((+v / 255 ) * 0.99 ) + 0.01]);
 
-        //     return Matrix.dot(m1, m2)._values;
-        // }
+            console.log({testXNorm, testX, testY: testY[0]})
 
-        // const testKernal = gpu.createKernel(test).setOutput([1000, 1000])
+            console.log("nn", nn2.forward(new Matrix(testXNorm)));
+    }, [nn2])
 
-        // console.log(testKernal());
-
-
-        // const arr = [[1,2,3],[4,5,6],[7,8,9],[10,11,12],[13,14,15]];
-        // const t = new Matrix(arr, true);
-        // const nn = new neuralNet();
-
-        const m1 = new Matrix([[1,2,3],
-                                [4,5,6]])
-    
-        const m2 = new Matrix([[2,3,2],
-                                [2,3,2]])
-
-        console.log(m1.toPow(2));
-    
-        }, [])
-
-
-
-    useEffect(() => {
-   
-
-
-    }, [])
     //train
     useEffect(() => {
         if (trainData.length === 0 || trainingStatus !== TrainingStatus.LOADING) return;
-        
- 
 
-        // //SGD
-        // for (let i=0; i < 60000; i++) {
-        //     const label = trainData[i][0];
+            const nn = new neuralNet(); 
+         
+            const [x,y] = mnist.getData(trainData);
 
-        //     const input = new Matrix(Matrix.convertArrayToMatrix( trainData[i].slice(1) ));
-
-        //     const normalised = input.map(v => ((+v / 255 ) * 0.99 ) + 0.01)
-        //     const y = new Matrix(Array.from({length: 10}, (_, index) => [index === label ? 1 : 0])); 
-            
-            
-        //     nn.feedForward(normalised)
-
-        //     if ( i % 11 === 0 ) console.log(`cost ${nn.calculateCost(y)}`)
-            
-        //     nn.backpropagate(y);
-        // }
-
-        //Mini-batch
-
-        // inputBatches.forEach((batch, i) => {
-        //     const inputs = new Matrix(batch);
-        //     const normalised = inputs.map(v => ((+v / 255 ) * 0.99 ) + 0.01).transpose();
-
-
-        //     const ys = new Matrix(outputBatches[i]).transpose();
-
-
-        //     console.log(nn);
-        //     nn.feedForward(normalised);
-
-        //     nn.backpropagate(ys)
-
-        //     console.log(i);
-
-        // })
-
-
-            // const nnParams = {
-            //     numOfInputs: 784, 
-            //     numOfHiddens: 60, 
-            //     numOfOutputs: 10,
-            //     batchSize: 32
-            // }
-    
-            // const nn = new NeuralNet(nnParams);
-    
-            // console.log("training...");
-            // console.log({trainData})
-    
-            // const [inputBatches, outputBatches] = mnist.getMiniBatches(nnParams.batchSize, trainData);
-
-            // console.log({inputBatches})
-
-            // for (let e=0; e < 5; e++) {
-            //     inputBatches.forEach((batch, i) => {
-            //         const inputs = new Matrix(batch);
-
-            //         const normalised = inputs.map(v => ((+v / 255 ) * 0.99 ) + 0.01).transpose();
-
-            //         const ys = new Matrix(outputBatches[i]).transpose();
-            //         nn.feedForward(normalised);
-        
-            //         nn.backpropagate(ys)
-        
-            //         console.log(i);
-        
-            //     })
-            // }
-                
-            // setNNData({...nnParams, w0: nn.w0, w1: nn.w1, b0: nn.b0, b1: nn.b1})
-
-            // setTrainingStatus(TrainingStatus.DONE);
-
-            // console.log("done");
-
-
-            const nn = new neuralNet();
-
-            const x = trainData.map(r => r.map(v => ((+v / 255 ) * 0.99 ) + 0.01))
+            const xNormalised = x.map(r => r.map(v => ((+v / 255 ) * 0.99 ) + 0.01));
 
             nn.addLayer(new layers.Input({numOfNodes: 784}))
 
@@ -201,8 +98,13 @@ function App() {
             }))
 
             nn.addLayer(new layers.Dense({
+                numOfNodes: 30, //note check 
+                useBias: true,
+                activation: new activations.Sigmoid()
+            }))
+            nn.addLayer(new layers.Dense({
                 numOfNodes: 10, //note check 
-                useBias: false,
+                useBias: true,
                 activation: new activations.Sigmoid()
             }))
 
@@ -211,42 +113,31 @@ function App() {
                 optimiser: new SGD({}),
             })
 
-            nn.train({
-                epochs: 1,
-                batchSize: 32,
-                x,
-                y: testData,
-                printEvery: 10
-            })
-
-
-
-            /* 
+            // nn.save()
+            // nn.load();
             
-                const [inputs, outputs] = mnist.loadData();
-
-                const inputs = new Matrix(inputs);
-                const outputs = new Matrix(outputs);
+            
+            // nn.train({
+            //         epochs: 1,
+            //         batchSize: 32,
+            //         x: xNormalised,
+            //         y,
+            //         printEvery: 15
+            //     })
                 
-                const normalised = inputs.map(v => ((+v / 255 ) * 0.99 ) + 0.01).transpose();
+                setNN2(nn);
 
-                const nn = new NeuralNet();
 
-                nn.addLayer(new layers.Dense());
-                nn.addLayer(new layers.Dense());
-                nn.addLayer(new layers.Dense());
 
-                nn.train({
-                    epochs: 10,
-                    batchSize: 32,
-                    X: normalised,
-                    y: outputs
-                })
+            // console.log(" done training new nn.................")
 
-            */
+            // const [testX, testY] = mnist.getData(testData);
+            // const testXNorm = testX[0].map(v => [((+v / 255 ) * 0.99 ) + 0.01]);
+
+            // console.log({testXNorm, testX, testY: testY[0]})
+
+            // console.log("nn", nn.forward(new Matrix(testXNorm)));
    
-
-
     }, [trainData, trainingStatus])
 
 
@@ -269,7 +160,6 @@ function App() {
         ctx.putImageData(imageData, 0, 0);
     }
 
-
     const predict = (digit: number[]) => {
         if (!nnData) return;
 
@@ -291,7 +181,6 @@ function App() {
         
    
     }
-
 
     return (
         <>
@@ -333,3 +222,5 @@ function App() {
 }
 
 export default App;
+
+

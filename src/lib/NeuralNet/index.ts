@@ -1,4 +1,5 @@
 import Matrix from "lib/matrix";
+import { createImportSpecifier } from "typescript";
 import { Input, Layer } from "./layers";
 import { IBackward, ILossFunction } from "./losses";
 import { Optimiser } from "./optimisers";
@@ -43,7 +44,6 @@ export default class NeuralNet {
         */
         this.inputLayer.forward({inputNodes})
 
-        console.log("hereheeh")
         for (let i=1; i < this.layers.length; i++) {
             const currentLayer = this.layers[i];
             const prevLayer = this.layers[i - 1];
@@ -88,7 +88,7 @@ export default class NeuralNet {
         if (batchSize) {
             numOfTrainingSteps = Math.floor(x.length / batchSize);
 
-            //if there aren't enough inputs to make a full batch at the end
+            //if there aren't enough inputs to make a full batch at the end then dump the rest into an extra batch
             if (numOfTrainingSteps * batchSize < x.length) numOfTrainingSteps += 1;
         }
 
@@ -98,10 +98,6 @@ export default class NeuralNet {
         
             for (let step=0; step < numOfTrainingSteps; step+=1) {
                 
-                if (step % printEvery === 0) {
-                    console.log(`training step ${step}`);
-                }
-                
                 //get current batch
                 if (batchSize) {
                     xBatch = new Matrix( this.getBatch(x, batchSize, step) )
@@ -110,20 +106,29 @@ export default class NeuralNet {
                     xBatch = new Matrix(x);
                     yBatch = new Matrix(y);
                 }
-
+                
                 xBatch = xBatch.transpose();
                 yBatch = yBatch.transpose();
-
+                
                 //feed forward inputs get predicted output (a) 
                 const outputs = this.forward(xBatch);
-
+                
+                
                 //backpropagation
                 this.backward({y: yBatch, outputs})
-
+                
                 //update weights and biases
                 trainableLayers.forEach(layer => {
                     this.optimiser!.update(layer);
                 })
+
+                if (step % printEvery === 0) {
+                    console.log("\n")
+                    const loss = this.loss!.forward({y: yBatch, outputs});
+                    this.showProgressBar(20, step, numOfTrainingSteps);
+                    console.log(`epoch: ${epoch}/${epochs}`)
+                    console.log(`loss: ${loss}`)
+                }
             }
         }
     }
@@ -160,12 +165,19 @@ export default class NeuralNet {
     }
 
     save() {
-
+        localStorage.setItem("neural-net", JSON.stringify(this));
     }
 
     load() { 
-
+        const nn = localStorage.getItem("neural-net")
+        if (!nn) return;
+        console.log(JSON.parse(nn))
     } 
+
+    private showProgressBar(barWidth: number, step: number, numOfTrainingSteps: number) {
+        const progress = Math.floor((step/numOfTrainingSteps) * barWidth )
+        console.log(`${step}/${numOfTrainingSteps}[${"=".repeat(progress)}>${".".repeat(20-progress)}] ${progress}%`);
+    }
 
 }
 
