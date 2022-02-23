@@ -1,4 +1,4 @@
-import Matrix from "../matrix";
+import Matrix from "../Matrix";
 
 type ValueType = number | Matrix;
 
@@ -39,7 +39,7 @@ export class Sigmoid extends Activation {
         if (!this.input || !this.output) throw new Error();
         
         const dSigmoid = this.output.map(v => v * (1 - v) )
-        this.delta = passBackError.multiply(dSigmoid);
+        this.delta = passBackError.mul(dSigmoid);
 
         return this.delta;
     }

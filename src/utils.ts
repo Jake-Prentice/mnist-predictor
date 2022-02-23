@@ -15,3 +15,31 @@ export const shuffleArray = (arr: any[], n: number = arr.length) =>
         [arr[i], arr[j]] = [arr[j], arr[i]];
     }
 }
+
+
+
+export const getFuncExecTime = (name: string, func: any, iterations: number=1, ...params: any[]) => {
+    let start;
+    let end;
+    let output;
+    if (iterations > 1) {
+        start = window.performance.now();
+        for (let i=0; i < iterations; i++) {
+            output = func(...params);  
+        }
+        end = window.performance.now(); 
+    }else {
+        start = window.performance.now();
+        output = func(...params);  
+        end = window.performance.now();
+    }
+    console.log("\n");
+    console.log("=".repeat(20))
+    console.log(`[${name}] iterations: ${iterations}`)
+    console.log(`[${name}] execution time: ${end - start}`)
+    console.log(`[${name}] inputs: `, params)
+    console.log(`[${name}] outputs: `, {output});
+    console.log("=".repeat(20))
+    console.log("\n");
+
+}

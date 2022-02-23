@@ -1,4 +1,4 @@
-import Matrix from "lib/matrix";
+import Matrix from "lib/Matrix";
 import { shuffleArray } from "./utils";
 
 export const getMiniBatches = (size: number, dataSet: number[][]): [number[][][], number[][][]] => {

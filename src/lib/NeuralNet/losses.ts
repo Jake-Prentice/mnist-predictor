@@ -1,4 +1,4 @@
-import Matrix from "lib/matrix";
+import Matrix, { scalar } from "../Matrix";
 
 export interface IBackward extends IForward {};
 
@@ -16,11 +16,11 @@ export interface ILossFunction {
 export const SSE: ILossFunction = {
     forward: ({y, outputs}) => {
         // 0.5 * (y-a)**2
-        return y.subtract(outputs).toPow(2).multiply(0.5).sum();
+        return scalar(0.5).mul(y.sub(outputs).pow(2)).sum();
     },
 
     backward:({y, outputs}) => {
-        return y.subtract(outputs).multiply(-1);
+        return y.sub(outputs).mul(-1);
     }
 }
 

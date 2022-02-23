@@ -1,24 +1,20 @@
 import React, { useEffect, useRef, useState } from 'react';
-import DrawCanvas from '../DrawCanvas';
-import * as Papa from "papaparse";
-import Matrix from "../../lib/matrix";
-import NeuralNet, { INeuralNet } from '../../neuralNet';
+import Matrix, { matrix, scalar } from "lib/Matrix";
 import Settings from '../Settings';
 import { Container, GlobalStyle, OutputContainer } from './style';
 import DigitInput from '../DigitInput';
 import styled from 'styled-components';
 import * as mnist from "../../mnist";
 import { MnistProvider, useMnist } from '../../contexts/MnistContext';
-
-import neuralNet from "lib/NeuralNet";
+import NeuralNet from "lib/NeuralNet";
 import * as layers from "lib/NeuralNet/layers";
 import * as activations from "lib/NeuralNet/activations"
 
-import { GPU, KernelVariable } from 'gpu.js';
 import { SSE } from 'lib/NeuralNet/losses';
 import { SGD } from 'lib/NeuralNet/optimisers';
+import { getFuncExecTime } from 'utils';
 
-const gpu = new GPU();
+
 
 export enum TrainingStatus {
     INCOMPLETE = "INCOMPLETE",
@@ -51,6 +47,8 @@ const Results = ({results}: {results: IResults}) => {
     )
 }
 
+
+
 function App() {
     
 
@@ -58,32 +56,42 @@ function App() {
 
     const [trainingStatus, setTrainingStatus] = useState<TrainingStatus>(TrainingStatus.INCOMPLETE);
 
-    const [nnData, setNNData] = useState<INeuralNet>()
     const [results, setResults] = useState<IResults>({});
-    const [nn2, setNN2] = useState<neuralNet>();
+   const nn2 = useRef<NeuralNet>()
 
 
     const imgRef = useRef<HTMLCanvasElement>(null);
 
     const {trainData, testData } = useMnist();
     
-    console.log("rerender")
     useEffect(() => {
-        console.log({nn2})
-        if (!nn2) return;
+        console.log({nn2: nn2.current})
+        if (!nn2.current) return;
                     const [testX, testY] = mnist.getData(testData);
             const testXNorm = testX[0].map(v => [((+v / 255 ) * 0.99 ) + 0.01]);
 
             console.log({testXNorm, testX, testY: testY[0]})
 
-            console.log("nn", nn2.forward(new Matrix(testXNorm)));
-    }, [nn2])
+            console.log("nn", nn2.current.forward(new Matrix(testXNorm)));
+    }, [nn2.current])
+
+
+    useEffect(() => {
+        const m1 = matrix([[2,2], [2,2]])
+        const m2 = Matrix.fill([10000,10000])
+
+        // getFuncExecTime("GPU", Matrix.dotGPU, m1, m2); 
+        // getFuncExecTime("CPU", Matrix.dot, m1, m2);
+
+        // getFuncExecTime("regular add", m2.add.bind(m2), 1, 2);
+        // getFuncExecTime("new add", Matrix.add, 1, scalar(5), scalar(6));
+    }, [])
 
     //train
     useEffect(() => {
         if (trainData.length === 0 || trainingStatus !== TrainingStatus.LOADING) return;
 
-            const nn = new neuralNet(); 
+            const nn = new NeuralNet(); 
          
             const [x,y] = mnist.getData(trainData);
 
@@ -117,17 +125,16 @@ function App() {
             // nn.load();
             
             
-            // nn.train({
-            //         epochs: 1,
-            //         batchSize: 32,
-            //         x: xNormalised,
-            //         y,
-            //         printEvery: 15
-            //     })
+            nn.train({
+                epochs: 1,
+                batchSize: 32,
+                x: xNormalised,
+                y,
+                printEvery: 15
+            })
                 
-                setNN2(nn);
-
-
+            // new Matrix([[1],[1]], {shape: [2,1]})
+            nn2.current = nn;
 
             // console.log(" done training new nn.................")
 
@@ -161,23 +168,33 @@ function App() {
     }
 
     const predict = (digit: number[]) => {
-        if (!nnData) return;
+        // if (!nnData) return;
 
-        const nn = new NeuralNet(nnData);
+        // const nn = new NeuralNet(nnData);
+        const nn = nn2.current
+        if (!nn) return;
 
         const input = Matrix.convertArrayToMatrix( digit.slice(1))
         const normalised = input.map(v => ((+v / 255 ) * 0.99 ) + 0.01)
 
-        nn.feedForward(normalised);
+        const outputs = nn.forward(normalised);
 
-        console.log(`prediction: ${nn.getPrediction()}, actual: ${digit[0]}, confidence: ${ nn.a2._values[nn.getPrediction()][0] * 100}%`)
+        let maxValue = 0;
+        let maxIndex = 0;
+        let maxcol = 0;
+
+        outputs.forIJ((v, i,j)=> {
+            if (v > maxValue) {
+                maxValue = v; maxIndex = i;  maxcol=j;
+            } 
+        })
 
         setResults({
-            prediction: nn.getPrediction(), 
-            confidence: Math.round(nn.a2._values[nn.getPrediction()][0] * 100 )
+            prediction: maxIndex, 
+            confidence: Math.round(outputs.values[maxIndex][maxcol])
         })
         console.log("outside", {digit}) 
-        drawDigit(normalised._values.flat()); 
+        drawDigit(normalised.values.flat()); 
         
    
     }

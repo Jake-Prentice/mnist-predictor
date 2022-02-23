@@ -1,4 +1,4 @@
-import Matrix from "lib/matrix";
+import Matrix from "../Matrix";
 import { createImportSpecifier } from "typescript";
 import { Input, Layer } from "./layers";
 import { IBackward, ILossFunction } from "./losses";
@@ -57,7 +57,7 @@ export default class NeuralNet {
     }
 
     getBatch(data: number[][], batchSize: number, step: number) {
-        const batch=[];
+        const batch: number[][] =[];
         for (let i=step * batchSize; i < (step + 1) * batchSize; i++) {
             if (i >= data.length) break;
             batch.push(data[i]);
@@ -76,6 +76,7 @@ export default class NeuralNet {
         printEvery=10
     }: ITrain) {
         if (!this.isCompiled) throw new Error("Neural network must be compiled before training");
+        //TODO - make sure each output is the same as the required output layer dimensions
         if (x.length !== y.length) throw new Error(`every input must have an output, got x.length ${x.length} and y.length ${y.length}`);
         //don't need to check y.length because x and y should be the same length
         if (batchSize && (batchSize > x.length || batchSize < 1 ) ) throw new Error(" batch size needs to be within range: 1 <= batchSize < x/y")
@@ -112,7 +113,6 @@ export default class NeuralNet {
                 
                 //feed forward inputs get predicted output (a) 
                 const outputs = this.forward(xBatch);
-                
                 
                 //backpropagation
                 this.backward({y: yBatch, outputs})
@@ -175,8 +175,9 @@ export default class NeuralNet {
     } 
 
     private showProgressBar(barWidth: number, step: number, numOfTrainingSteps: number) {
-        const progress = Math.floor((step/numOfTrainingSteps) * barWidth )
-        console.log(`${step}/${numOfTrainingSteps}[${"=".repeat(progress)}>${".".repeat(20-progress)}] ${progress}%`);
+        const progress = step/numOfTrainingSteps
+        const currentBarWidth = Math.floor(progress * barWidth)
+        console.log(`${step}/${numOfTrainingSteps}[${"=".repeat(currentBarWidth)}>${".".repeat(20-currentBarWidth)}] ${Math.floor(progress * 100)}%`);
     }
 
 }

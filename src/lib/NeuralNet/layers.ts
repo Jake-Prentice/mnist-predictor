@@ -1,4 +1,4 @@
-import Matrix from "lib/matrix";
+import Matrix from "../Matrix";
 import { ActivationFunc, sigmoid, Activation } from "./activations";
 
 //Base layer
@@ -102,22 +102,22 @@ export class Dense extends Layer {
 
     build(prevNumOfNodes: number) {
         
-        this.weights = new Matrix(this.numOfNodes, prevNumOfNodes);
-        this.dWeights = new Matrix(this.weights.rows, this.weights.cols);
+        // this.weights = new Matrix([this.numOfNodes, prevNumOfNodes]);
+        // this.dWeights = new Matrix([this.weights.rows, this.weights.cols]);
 
-        this.weights.initRand(-1, 1);
+        // this.weights.initRand(-1, 1);
+        // // Matrix.rand([this.numOfNodes, prevNumOfNodes], -1, 1);
         
-        if (this._useBias) {
-            this.biases = new Matrix(Array.from(
-                {length: this.numOfNodes},
-                _ => [0.01]
-            )); 
+        
+        // if (this._useBias) {
+        //     this.biases = new Matrix([this.numOfNodes, 1], {initValue: 0.01});
+        //     // Matrix.fill([this.numOfNodes, 1], 0.01);
 
-            //initialise so that there is shape validation
-            this.dBiases = new Matrix(this.biases.rows, this.biases.cols);
-        }
+        //     //initialise so that there is shape validation
+        //     this.dBiases = new Matrix([this.biases.rows, this.biases.cols]);
+        // }
 
-        this.isBuilt = true;
+        // this.isBuilt = true;
 
 
     }
@@ -146,6 +146,15 @@ export class Dense extends Layer {
             : passBackError; 
         
         //dJdW
+
+        /* 
+            const dWeights = Matrix.dot(delta, this.inputNodes.transpose()).toArray();
+            this.dWeights = new MatrixVariable(dWeights, this.weights.shape);
+
+            ...
+
+            this.dWeights.assign(new Matrix());
+        */
         this.dWeights = Matrix.dot(delta, this.inputNodes.transpose())
 
         if (this._useBias) this.dBiases = delta.sumRows(); 

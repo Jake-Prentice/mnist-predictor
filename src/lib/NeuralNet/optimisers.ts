@@ -1,7 +1,13 @@
+import Matrix from "../Matrix";
 import { Dense, Layer } from "./layers";
 
 interface IOptimiser {
     learningRate?: number;
+}
+
+interface IUpdate {
+    weights: Matrix;
+    biases?: Matrix;
 }
 
 export abstract class Optimiser {
@@ -26,11 +32,11 @@ export class SGD extends Optimiser {
     
         // weights += -learning_rate * dweights
         // biases += -learning_rate * dbiases
-        layer.weights = layer.weights!.add( layer.dWeights!.multiply(-1 * this.learningRate) );
-        if (layer.biases) layer.biases = layer.biases.add( layer.dBiases!.multiply( -1 * this.learningRate) );
+        layer.weights.assign( layer.weights!.add( layer.dWeights!.mul(-1 * this.learningRate) ) )
+        if (layer.biases) layer.biases.assign( layer.biases.add( layer.dBiases!.mul( -1 * this.learningRate) ) );
         
     }
 }
 
 
-export {};
+export {}; 
