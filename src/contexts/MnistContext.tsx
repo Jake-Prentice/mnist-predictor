@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from 'react'
+import React, { useContext, useEffect, useState, useRef } from 'react'
 import * as Papa from "papaparse";
 
 
@@ -27,15 +27,15 @@ const fetchMnistCsv = async (path: string, cb: (results: number[][]) => void) =>
 
     const results: number[][] = [];
 
-   Papa.parse<any>(blob, {
+    Papa.parse<any>(blob, {
         delimiter: ",",
         dynamicTyping: true,
+        skipEmptyLines: true,
         worker: true,
         step: (stepResults) => {
             results.push(stepResults.data);
         },
-         complete: () => cb(results)
-        
+        complete: () => cb(results)
     })
 } 
 
@@ -48,15 +48,10 @@ export function MnistProvider({children}: React.PropsWithChildren<IProps>) {
     useEffect(() => {
 
         (async () => {
-            //just remove empty spaces
+            //need to remove top line from csv file
             console.log("Loading csvs...")
-            await fetchMnistCsv("./data/mnist_train.csv", (results) => {
-                setTrainData(results.slice(1).slice(0,-1));
-            })
-
-            await fetchMnistCsv("./data/mnist_test.csv", (results) => {
-                setTestData(results.slice(1).slice(0,-1));
-            })
+            await fetchMnistCsv("./data/mnist_train.csv", (results) => setTrainData(results.slice(1)))
+            await fetchMnistCsv("./data/mnist_test.csv", (results) => setTestData(results.slice(1)));
             console.log("finished loading csvs")
         })();
 

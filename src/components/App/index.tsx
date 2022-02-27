@@ -1,19 +1,22 @@
 import React, { useEffect, useRef, useState } from 'react';
-import Matrix, { matrix, scalar } from "lib/Matrix";
+import Matrix, { matrix, scalar, MatrixValuesType} from "lib/Matrix";
 import Settings from '../Settings';
 import { Container, GlobalStyle, OutputContainer } from './style';
 import DigitInput from '../DigitInput';
 import styled from 'styled-components';
 import * as mnist from "../../mnist";
 import { MnistProvider, useMnist } from '../../contexts/MnistContext';
-import NeuralNet from "lib/NeuralNet";
+// import NeuralNet from "lib/NeuralNet";
 import * as layers from "lib/NeuralNet/layers";
 import * as activations from "lib/NeuralNet/activations"
 
 import { SSE } from 'lib/NeuralNet/losses';
 import { SGD } from 'lib/NeuralNet/optimisers';
 import { getFuncExecTime } from 'utils';
-
+import {wrap} from "comlink"
+import { Model } from 'lib';
+import { NodeBuilderFlags } from 'typescript';
+import { RandomUniform } from 'lib/NeuralNet/initializers';
 
 
 export enum TrainingStatus {
@@ -47,6 +50,9 @@ const Results = ({results}: {results: IResults}) => {
     )
 }
 
+function isTypedArray(arr: MatrixValuesType): arr is Float32Array[] {
+    return arr[0] instanceof Float32Array
+}
 
 
 function App() {
@@ -57,7 +63,8 @@ function App() {
     const [trainingStatus, setTrainingStatus] = useState<TrainingStatus>(TrainingStatus.INCOMPLETE);
 
     const [results, setResults] = useState<IResults>({});
-   const nn2 = useRef<NeuralNet>()
+    const [data, setData] = useState<{loss: number, epoch: number}[]>([]);
+   const nn2 = useRef<Model>()
 
 
     const imgRef = useRef<HTMLCanvasElement>(null);
@@ -67,7 +74,7 @@ function App() {
     useEffect(() => {
         console.log({nn2: nn2.current})
         if (!nn2.current) return;
-                    const [testX, testY] = mnist.getData(testData);
+            const [testX, testY] = mnist.getData(testData);
             const testXNorm = testX[0].map(v => [((+v / 255 ) * 0.99 ) + 0.01]);
 
             console.log({testXNorm, testX, testY: testY[0]})
@@ -76,79 +83,65 @@ function App() {
     }, [nn2.current])
 
 
-    useEffect(() => {
-        const m1 = matrix([[2,2], [2,2]])
-        const m2 = Matrix.fill([10000,10000])
-
-        // getFuncExecTime("GPU", Matrix.dotGPU, m1, m2); 
-        // getFuncExecTime("CPU", Matrix.dot, m1, m2);
-
-        // getFuncExecTime("regular add", m2.add.bind(m2), 1, 2);
-        // getFuncExecTime("new add", Matrix.add, 1, scalar(5), scalar(6));
-    }, [])
-
     //train
     useEffect(() => {
         if (trainData.length === 0 || trainingStatus !== TrainingStatus.LOADING) return;
 
-            const nn = new NeuralNet(); 
-         
-            const [x,y] = mnist.getData(trainData);
+        const nn = new Model(); 
+        
+        const [x,y] = mnist.getData(trainData);
+        
+        const start = window.performance.now();
+        const xNormalised = x.map(r => r.map(v => ((+v / 255 ) * 0.99 ) + 0.01));
+        const end = window.performance.now();
 
-            const xNormalised = x.map(r => r.map(v => ((+v / 255 ) * 0.99 ) + 0.01));
+        console.log(end - start);
 
-            nn.addLayer(new layers.Input({numOfNodes: 784}))
+        nn.addLayer(new layers.Input({numOfNodes: 784}))
 
-            nn.addLayer(new layers.Dense({
-                numOfNodes: 60,
-                useBias: true,
-                activation: new activations.Sigmoid()
-            }))
+        nn.addLayer(new layers.Dense({
+            numOfNodes: 60,
+            useBias: true,
+            kernelInitializer: new RandomUniform(),
+            activation: new activations.Sigmoid()
+        }))
 
-            nn.addLayer(new layers.Dense({
-                numOfNodes: 30, //note check 
-                useBias: true,
-                activation: new activations.Sigmoid()
-            }))
-            nn.addLayer(new layers.Dense({
-                numOfNodes: 10, //note check 
-                useBias: true,
-                activation: new activations.Sigmoid()
-            }))
+        nn.addLayer(new layers.Dense({
+            numOfNodes: 30, //note check 
+            useBias: true,
+            activation: new activations.Sigmoid()
+        }))
+        nn.addLayer(new layers.Dense({
+            numOfNodes: 10, //note check 
+            useBias: true,
+            activation: new activations.Sigmoid()
+        }))
 
-            nn.compile({
-                loss: SSE,
-                optimiser: new SGD({}),
-            })
+        nn.compile({
+            loss: new SSE(),
+            optimiser: new SGD(),
+        });
 
-            // nn.save()
-            // nn.load();
-            
-            
-            nn.train({
+        (async() => {
+            await nn.trainOnWorker({    
                 epochs: 1,
                 batchSize: 32,
                 x: xNormalised,
                 y,
-                printEvery: 15
+                printEvery: 1500000,
+                onTrainingStep: ({loss, epoch}) => setData(prev => [...prev, {loss, epoch}])
             })
-                
-            // new Matrix([[1],[1]], {shape: [2,1]})
+
             nn2.current = nn;
+        })();
 
-            // console.log(" done training new nn.................")
-
-            // const [testX, testY] = mnist.getData(testData);
-            // const testXNorm = testX[0].map(v => [((+v / 255 ) * 0.99 ) + 0.01]);
-
-            // console.log({testXNorm, testX, testY: testY[0]})
-
-            // console.log("nn", nn.forward(new Matrix(testXNorm)));
-   
     }, [trainData, trainingStatus])
 
+    useEffect(() => {
+        console.log({data});
+    }, [data])
 
-    const drawDigit = (digit: number[]) => {
+    const drawDigit = (digit: number[] | Float32Array) => {
         const canvas = imgRef.current!;
         const ctx = canvas.getContext("2d")!;
 
@@ -168,13 +161,10 @@ function App() {
     }
 
     const predict = (digit: number[]) => {
-        // if (!nnData) return;
-
-        // const nn = new NeuralNet(nnData);
         const nn = nn2.current
         if (!nn) return;
 
-        const input = Matrix.convertArrayToMatrix( digit.slice(1))
+        const input = Matrix.shape1DArray( digit.slice(1), [digit.length -1, 1]);
         const normalised = input.map(v => ((+v / 255 ) * 0.99 ) + 0.01)
 
         const outputs = nn.forward(normalised);
@@ -183,7 +173,7 @@ function App() {
         let maxIndex = 0;
         let maxcol = 0;
 
-        outputs.forIJ((v, i,j)=> {
+        outputs.iterate((v, i,j)=> {
             if (v > maxValue) {
                 maxValue = v; maxIndex = i;  maxcol=j;
             } 
@@ -191,39 +181,21 @@ function App() {
 
         setResults({
             prediction: maxIndex, 
-            confidence: Math.round(outputs.values[maxIndex][maxcol])
+            confidence: Math.round(outputs.values[maxIndex][maxcol] * 100)
         })
         console.log("outside", {digit}) 
-        drawDigit(normalised.values.flat()); 
-        
-   
+        drawDigit(normalised.flat()); 
     }
 
     return (
         <>
         <GlobalStyle />
- 
             <Container>
                 <div style={{gap: "inherit", display: "flex", flexDirection: "column", height: "100%", width: "60%"}}>
                     <DigitInput predict={predict} drawDigit={drawDigit}/>
                     <Results results={results} />
                 </div>
                 <Settings setTrainingStatus={setTrainingStatus}/>  
-                
-                {/* <div>
-                    <button onClick={() => setTrainingStatus(TrainingStatus.LOADING)}>start training</button>
-                </div>
-                <OutputContainer>
-                    prediction: 
-                </OutputContainer>
-                <div style={{width: "300px", height: "300px"}}>
-                    <div>
-                        test data index
-                        <input type={"number"} onChange={e => setTestDigitIndex(+e.target.value)}/>
-                        <button onClick={() => predict(testData[testDigitIndex])}>predict</button>
-                    </div>
-                
-                </div> */}
             </Container>
             <div style={{width: "300px", height: "300px"}}>
                 <div>
@@ -233,7 +205,6 @@ function App() {
                 </div>
             </div> 
             <canvas style={{width: 300, height: 300}} ref={imgRef} /> 
-
         </>
     )
 }

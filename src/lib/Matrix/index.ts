@@ -11,8 +11,9 @@ import {
 } from "./binaryOps";
 
 export type Shape = [number, number];
+export type MatrixValuesType = number[][] | Float32Array[]
 
-export const assertShapeConsistency = (values: number[][], shape: [number, number]) => {
+export const assertShapeConsistency = (values: MatrixValuesType, shape: [number, number]) => {
     const [rowsRequired, colsRequired] = shape;
 
     if (values.length !== rowsRequired) throw new Error(`array requires ${rowsRequired} rows, but got ${values.length}`)
@@ -33,7 +34,7 @@ export const assertPositiveShapeDimensions = (shape: Shape) => {
     if (shape[0] < 1 || shape[1] < 1) throw new Error(`matrix must have at least 1 row and 1 colmun, got ${shape[0]} & ${shape[1]}`)
 }
 
-export const inferShape = (values: number[][], checkShapeConsistency: boolean) => {
+export const inferShape = (values: MatrixValuesType, checkShapeConsistency: boolean) => {
     const rows = values.length;
     const cols = values[0].length;
 
@@ -41,26 +42,31 @@ export const inferShape = (values: number[][], checkShapeConsistency: boolean) =
     return [rows, cols];
 }
 
-            
+export interface IMatrixConfig { 
+    rows: number;
+    cols: number;
+    shape: Shape;
+} 
+
 class Matrix {
 
     readonly rows: number;
     readonly cols: number;
     readonly shape: Shape;
-    private _values: number[][];
+    private _values: MatrixValuesType;
 
-    static add: BinaryOperation;
-    static sub: BinaryOperation;
-    static mul: BinaryOperation;
-    static div: BinaryOperation;
-    static pow: BinaryOperation;
+    static add: BinaryOperation = add;
+    static sub: BinaryOperation = sub;
+    static mul: BinaryOperation = mul;
+    static div: BinaryOperation = div;
+    static pow: BinaryOperation = pow;
 
     get values() {
         return this._values;
     }
 
     constructor(
-        values: number[][],
+        values: MatrixValuesType,
         shape?: Shape
     ) {
         this.rows = shape ? shape[0] : values.length;
@@ -69,19 +75,45 @@ class Matrix {
         this._values = values;
     }
 
-   
-    assign(newMatrix: Matrix) {
-        if (!Matrix.shapeEquals(this, newMatrix)) throw new Error("");
+    assign(newMatrix: Matrix, errorMessage?: string) {
+        if (!Matrix.shapeEquals(this, newMatrix)) {
+            throw new Error(
+                errorMessage || 
+                `matrix of shape ${newMatrix.printShape()} can't be assigned to matrix of ${this.printShape()}`
+            );
+        }
         this._values = newMatrix._values;
+    }
+
+    printShape() {
+        return `(${this.rows} x ${this.cols})`
     }
 
     getConfig() {
         return {
             shape: this.shape,
             rows: this.rows,
-            cols: this.cols,
-            values: this._values
+            cols: this.cols
         }
+    }
+
+    static printShape(shape: Shape) {
+        return `(${shape[0]} x ${shape[1]})`
+    }
+
+    //turns one-dimensional array into Matrix of specified shape
+    static shape1DArray(arr: number[] | Float32Array, shape: Shape) {
+        const stride = shape[1];
+        if (shape[0] * shape[1] > arr.length) {
+            throw new Error(`cannot convert arr of length ${arr.length} into Matrix of shape ${this.printShape(shape)}, expected arr.length=${shape[0] * shape[1]} `)
+        }
+        const result = create2dArray(shape);
+        for (let row=0; row < shape[0]; row++) {
+            for (let col=0; col < shape[1]; col++) {
+                result[row][col] = arr[col + row * stride];
+            }
+        }
+        return new Matrix(result);
     }
  
     static shapeEquals(m1: Matrix, m2: Matrix) {
@@ -99,7 +131,6 @@ class Matrix {
         return new Matrix(result);
     }
 
-
     static fillFromFunc(shape: Shape, cb: (i: number, j: number) => number) {
         assertPositiveShapeDimensions(shape);
         const result = create2dArray(shape);
@@ -111,16 +142,28 @@ class Matrix {
         return new Matrix(result);
     }
 
-    static rndUniform(shape: Shape, min: number, max: number) {
+    static randUniform(shape: Shape, min: number, max: number) {
         return Matrix.fillFromFunc(shape, () => Math.random() * (max - min) + min)
     }
 
-
-    map(cb: (v: number, i: number, j: number) => number) {
-        return new Matrix( this._values.map((row, i) => row.map((v, j) => cb(v, i, j))) )
+    //used in serializing 
+    flat() {
+        const result: number[] = []
+        this.iterate(v => result.push(v));
+        return new Float32Array(result);
     }
 
-    forIJ(cb: (value: number, i: number, j: number) => void) {
+    map(cb: (v: number, i: number, j: number) => number) {
+        const result = create2dArray(this.shape);
+        for (let i=0; i < this.rows; i++) {
+            for (let j=0; j < this.cols; j++) {
+                result[i][j] = cb(this._values[i][j], i,j);
+            }
+        }
+        return new Matrix(result);
+    }
+
+    iterate(cb: (value: number, i: number, j: number) => void) {
         for (let i=0; i < this.rows; i++) {
             for (let j=0; j < this.cols; j++) {
                 cb(this._values[i][j], i,j);
@@ -128,15 +171,10 @@ class Matrix {
         }
     }
 
-
     transpose() { 
         const T =  Matrix.fill([this.cols, this.rows]);
-        this.forIJ(( value , i, j) => T._values[j][i] = value )
+        this.iterate(( value , i, j) => T._values[j][i] = value )
         return T;
-    }
-
-    static convertArrayToMatrix(arr: number[] | string[]) {
-        return new Matrix(arr.map(v => [+v]));
     }
 
     static dotGPU(a: Matrix, b: Matrix): Matrix{
@@ -147,34 +185,29 @@ class Matrix {
     }
 
     static dot(m1: Matrix, m2: Matrix) {
-            
         if (m1.cols !== m2.rows) throw new Error(`cannot dot a (${m1.rows} x ${m1.cols}) & (${m2.rows} x ${m2.cols})`)
-
+        //TODO - make more efficient?
         const result = Matrix.fill([m1.rows, m2.cols]);
-        
         for (let i=0; i < m1.rows; i++) {
             for (let j=0; j < m2.cols; j++) {
                 let sum = 0;
                 for (let k=0; k < m1.cols; k++) {
                     sum += m1._values[i][k] * m2._values[k][j];
                 }
-    
                 result._values[i][j] = sum; 
             }
         }
-    
         return result;
     }
 
     sum() {
         let total=0;
-        this.forIJ(v => total += v);
+        this.iterate(v => total += v);
         return total;
     }
 
     sumRows() {
         const sums: number[][] = [];
-        
         for (let i=0; i < this.rows; i++) {
             let sum = 0;
             for (let j=0; j < this.cols; j++) {
@@ -189,7 +222,7 @@ class Matrix {
 
     averageRows() {
         const sumMatrix = this.sumRows();
-        return sumMatrix.map((v, i, j) => v / this.rows);
+        return sumMatrix.map(v => v / this.rows);
     }
 
     averageCols() {
@@ -212,21 +245,17 @@ class Matrix {
     div(m: Matrix | number) { return Matrix.div(this, m) }
     pow(m: Matrix | number) { return Matrix.pow(this, m) }
 
+    dot(m: Matrix) { return Matrix.dot(this, m)}
 }
 
-Matrix.add = add;
-Matrix.sub = sub;
-Matrix.mul = mul;
-Matrix.div = div;
-Matrix.pow = pow;
 
-interface IMatrixConfig {
+interface IMatrixParamas {
     passByRef?: boolean;
     checkShapeConsistency?: boolean;
 }
 
 //handles validation  
-export const matrix = (values: number[][], shape?: Shape, {checkShapeConsistency=true, passByRef=false}: IMatrixConfig = {}) => {
+export const matrix = (values: MatrixValuesType, shape?: Shape, {checkShapeConsistency=true, passByRef=false}: IMatrixParamas = {}) => {
 
     if (shape) assertPositiveShapeDimensions(shape);
     const [inferredRows, inferredCols] = inferShape(values, checkShapeConsistency);

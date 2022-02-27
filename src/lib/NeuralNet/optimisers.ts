@@ -1,42 +1,52 @@
-import Matrix from "../Matrix";
-import { Dense, Layer } from "./layers";
+import { ClassNameToClassDict, Serializable } from "./serialization";
+import { Layer, Weight } from "./layers";
 
-interface IOptimiser {
+export interface IOptimiser {
     learningRate?: number;
 }
 
-interface IUpdate {
-    weights: Matrix;
-    biases?: Matrix;
-}
-
-export abstract class Optimiser {
+export abstract class Optimiser extends Serializable {
 
     learningRate: number;
   
-    constructor({learningRate}: IOptimiser) {
+    constructor({learningRate}: IOptimiser={}) {
+        super();
         this.learningRate = learningRate || 0.1;
     }
+
     abstract update(layer: Layer): void;
+    
+    getConfig(): object {
+        return {learningRate: this.learningRate}
+    }
 }
 
+interface ISGDUpdatable extends Layer {
+    kernel: Weight;
+    bias?: Weight;
+}
 
 export class SGD extends Optimiser {
-    
-    constructor(props: IOptimiser) {
-        super(props);
-    }
-
-    update(layer: Dense): void {
-       if (!layer.weights) throw new Error("can't update a layer with no weights");
-    
+    className = "SGD"
+    update({kernel, bias}: ISGDUpdatable): void {
+        if (!kernel) throw new Error("sgd optimiser can only update a layer with at least a kernel")
         // weights += -learning_rate * dweights
         // biases += -learning_rate * dbiases
-        layer.weights.assign( layer.weights!.add( layer.dWeights!.mul(-1 * this.learningRate) ) )
-        if (layer.biases) layer.biases.assign( layer.biases.add( layer.dBiases!.mul( -1 * this.learningRate) ) );
-        
+        const kernelUpdate = kernel.value.add( kernel.delta.mul(-1 * this.learningRate) );
+        kernel.assign(kernelUpdate);
+
+        if (bias) {
+            const biasUpdate = bias.value.add( bias.delta.mul( -1 * this.learningRate) ) 
+            bias.assign(biasUpdate);
+        }
     }
 }
 
 
-export {}; 
+export const optimiserDict: ClassNameToClassDict<Optimiser> = { 
+    sgd: SGD
+}
+
+
+
+
