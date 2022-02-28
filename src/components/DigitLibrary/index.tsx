@@ -1,7 +1,6 @@
 
 
 import React, { useEffect, useRef, useState } from 'react'
-import { TrainingStatus } from '../App';
 import { ButtonContainer, StyledCanvas } from '../DigitInput/style';
 import Button from '../shared/Button';
 import { Container} from './style';
@@ -22,7 +21,7 @@ const DigitLibrary = () => {
 
     const imgRef = useRef<HTMLCanvasElement>(null);
 
-    const {testData} = useMnist();
+    const {testData, predict} = useMnist();
     
     useEffect(() => {
         const canvas = imgRef.current;
@@ -63,12 +62,11 @@ const DigitLibrary = () => {
         <>
             <StyledCanvas 
                style={{width: 300, height: 300}}
-         
                 ref={imgRef} 
             />
             <ButtonContainer> 
                 <FontAwesomeIcon onClick={onLeftCaretClick} style={CaretButtonStyles} icon={faCaretLeft} /> 
-                <Button>predict image</Button>
+                <Button onClick={() => predict(testData[digitIndex])}>predict image</Button>
                 <FontAwesomeIcon onClick={onRightCaretClick} style={CaretButtonStyles} icon={faCaretRight} />
             </ButtonContainer>
         </>

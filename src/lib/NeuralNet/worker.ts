@@ -1,20 +1,19 @@
 
 import * as comlink from "comlink";
-import { IWeightConfig } from "./layers";
-import { IModelTopology, ITrain, Model } from "./index";
+import { IModelTopology, IModelWeightData, ITrain, Model } from "./index";
 
 const trainOnWorker = (
     params: ITrain, 
     onTrainingStep: ITrain["onTrainingStep"],
     modelTopology: IModelTopology, 
-    {weightData, weightConfig}: {weightData: string, weightConfig: IWeightConfig[]} 
+    weights: IModelWeightData 
 ) => {
     const nn = new Model();
     nn.loadModelTopology(modelTopology);
-    nn.loadWeightData({weightData, weightConfig});
+    nn.loadEncodedWeights(weights);
 
     nn.train({...params, onTrainingStep});
-    return nn.getWeightDataAndConfig();
+    return nn.getEncodedWeightsAndConfig();
 }
 
 const exports = {

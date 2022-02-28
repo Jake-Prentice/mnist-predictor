@@ -6,24 +6,7 @@ import DigitInput from '../DigitInput';
 import styled from 'styled-components';
 import * as mnist from "../../mnist";
 import { MnistProvider, useMnist } from '../../contexts/MnistContext';
-// import NeuralNet from "lib/NeuralNet";
-import * as layers from "lib/NeuralNet/layers";
-import * as activations from "lib/NeuralNet/activations"
-
-import { SSE } from 'lib/NeuralNet/losses';
-import { SGD } from 'lib/NeuralNet/optimisers';
-import { getFuncExecTime } from 'utils';
-import {wrap} from "comlink"
-import { Model } from 'lib';
-import { NodeBuilderFlags } from 'typescript';
-import { RandomUniform } from 'lib/NeuralNet/initializers';
-
-
-export enum TrainingStatus {
-    INCOMPLETE = "INCOMPLETE",
-    LOADING = "LOADING", 
-    DONE = "DONE"
-}
+import Graph from 'components/Graph';
 
 const ResultsContainer = styled.div`
     height: 30%;
@@ -50,97 +33,19 @@ const Results = ({results}: {results: IResults}) => {
     )
 }
 
-function isTypedArray(arr: MatrixValuesType): arr is Float32Array[] {
-    return arr[0] instanceof Float32Array
-}
-
-
 function App() {
     
-
     const [testDigitIndex, setTestDigitIndex] = useState(1)
-
-    const [trainingStatus, setTrainingStatus] = useState<TrainingStatus>(TrainingStatus.INCOMPLETE);
-
-    const [results, setResults] = useState<IResults>({});
-    const [data, setData] = useState<{loss: number, epoch: number}[]>([]);
-   const nn2 = useRef<Model>()
-
 
     const imgRef = useRef<HTMLCanvasElement>(null);
 
-    const {trainData, testData } = useMnist();
+    const {
+        model,
+        saveModel,
+        predict,
+        results
+    } = useMnist();
     
-    useEffect(() => {
-        console.log({nn2: nn2.current})
-        if (!nn2.current) return;
-            const [testX, testY] = mnist.getData(testData);
-            const testXNorm = testX[0].map(v => [((+v / 255 ) * 0.99 ) + 0.01]);
-
-            console.log({testXNorm, testX, testY: testY[0]})
-
-            console.log("nn", nn2.current.forward(new Matrix(testXNorm)));
-    }, [nn2.current])
-
-
-    //train
-    useEffect(() => {
-        if (trainData.length === 0 || trainingStatus !== TrainingStatus.LOADING) return;
-
-        const nn = new Model(); 
-        
-        const [x,y] = mnist.getData(trainData);
-        
-        const start = window.performance.now();
-        const xNormalised = x.map(r => r.map(v => ((+v / 255 ) * 0.99 ) + 0.01));
-        const end = window.performance.now();
-
-        console.log(end - start);
-
-        nn.addLayer(new layers.Input({numOfNodes: 784}))
-
-        nn.addLayer(new layers.Dense({
-            numOfNodes: 60,
-            useBias: true,
-            kernelInitializer: new RandomUniform(),
-            activation: new activations.Sigmoid()
-        }))
-
-        nn.addLayer(new layers.Dense({
-            numOfNodes: 30, //note check 
-            useBias: true,
-            activation: new activations.Sigmoid()
-        }))
-        nn.addLayer(new layers.Dense({
-            numOfNodes: 10, //note check 
-            useBias: true,
-            activation: new activations.Sigmoid()
-        }))
-
-        nn.compile({
-            loss: new SSE(),
-            optimiser: new SGD(),
-        });
-
-        (async() => {
-            await nn.trainOnWorker({    
-                epochs: 1,
-                batchSize: 32,
-                x: xNormalised,
-                y,
-                printEvery: 1500000,
-                onTrainingStep: ({loss, epoch}) => setData(prev => [...prev, {loss, epoch}])
-            })
-
-            nn2.current = nn;
-        })();
-
-    }, [trainData, trainingStatus])
-
-    useEffect(() => {
-        console.log({data});
-    }, [data])
-
     const drawDigit = (digit: number[] | Float32Array) => {
         const canvas = imgRef.current!;
         const ctx = canvas.getContext("2d")!;
@@ -160,51 +65,17 @@ function App() {
         ctx.putImageData(imageData, 0, 0);
     }
 
-    const predict = (digit: number[]) => {
-        const nn = nn2.current
-        if (!nn) return;
-
-        const input = Matrix.shape1DArray( digit.slice(1), [digit.length -1, 1]);
-        const normalised = input.map(v => ((+v / 255 ) * 0.99 ) + 0.01)
-
-        const outputs = nn.forward(normalised);
-
-        let maxValue = 0;
-        let maxIndex = 0;
-        let maxcol = 0;
-
-        outputs.iterate((v, i,j)=> {
-            if (v > maxValue) {
-                maxValue = v; maxIndex = i;  maxcol=j;
-            } 
-        })
-
-        setResults({
-            prediction: maxIndex, 
-            confidence: Math.round(outputs.values[maxIndex][maxcol] * 100)
-        })
-        console.log("outside", {digit}) 
-        drawDigit(normalised.flat()); 
-    }
-
     return (
         <>
         <GlobalStyle />
-            <Container>
-                <div style={{gap: "inherit", display: "flex", flexDirection: "column", height: "100%", width: "60%"}}>
-                    <DigitInput predict={predict} drawDigit={drawDigit}/>
-                    <Results results={results} />
-                </div>
-                <Settings setTrainingStatus={setTrainingStatus}/>  
-            </Container>
-            <div style={{width: "300px", height: "300px"}}>
-                <div>
-                    test data index
-                    <input type={"number"} onChange={e => setTestDigitIndex(+e.target.value)}/>
-                    <button onClick={() => predict(testData[testDigitIndex])}>predict</button>
-                </div>
-            </div> 
-            <canvas style={{width: 300, height: 300}} ref={imgRef} /> 
+        <Container>
+            <div style={{gap: "inherit", display: "flex", flexDirection: "column", height: "100%", width: "60%"}}>
+                <DigitInput predict={predict} drawDigit={drawDigit}/>
+                <Results results={results} />
+            </div>
+            <Settings/>  
+        </Container>
+        <Graph />
         </>
     )
 }

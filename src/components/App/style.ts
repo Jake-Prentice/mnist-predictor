@@ -3,7 +3,6 @@ import styled, {createGlobalStyle} from "styled-components";
 export const Container = styled.div`
     width: 600px;
     height: 600px;
-    /* border: 1px solid black; */
     display: flex;
     gap: 1rem;
     margin: 1.5rem;

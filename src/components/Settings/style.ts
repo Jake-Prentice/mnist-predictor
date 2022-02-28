@@ -7,9 +7,9 @@ export const StyledSettings = styled.div`
     display: flex;
     justify-content: center;
     align-items: center;
-    flex-direction: column;
     background: #F4F2F2;
     border-radius: inherit;
+    transition: height 0.3s ease;
 `
 
 export const Container = styled.div`
@@ -28,4 +28,9 @@ export const TrainButton = styled(Button)`
     width: 95%;
     border-radius: 5px;
     background: #A3EEFF;
+`
+
+export const TrainButtonContainer = styled.div`
+    width: 95%;
+    align-self: center;
 `

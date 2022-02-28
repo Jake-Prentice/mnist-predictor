@@ -2,7 +2,7 @@ import { proxy, wrap } from "comlink";
 import Matrix from "../Matrix";
 import { Input, IWeightConfig, Layer, layerDict, Weight } from "./layers";
 import { IBackward, Loss, lossDict } from "./losses";
-import {  IOptimiser, Optimiser, optimiserDict, SGD } from "./optimisers";
+import { Optimiser, optimiserDict } from "./optimisers";
 import { base64StringToArrayBuffer, deserialize, WrappedSerializable, wrapSerializable } from "./serialization";
 
 export interface ITrain {
@@ -28,6 +28,14 @@ export interface IModelTopology {
 export interface IOnTrainingStepArgs {
     loss: number;
     epoch: number;
+    totalEpochs: number;
+    progress: number;
+    step: number;
+}
+
+export interface IModelWeightData {
+    encoded: string, 
+    config: IWeightConfig[]
 }
 
 export class Model { 
@@ -48,7 +56,6 @@ export class Model {
         !(layer instanceof Input) && layer.build(this.outputLayer.numOfNodes);
 
         this.layers.push(layer);
-
     }
 
     forward(inputNodes: Matrix) {
@@ -141,11 +148,17 @@ export class Model {
                     this.optimiser!.update(layer);
                 })
 
-                const loss = this.loss!.forward({y: yBatch, output});
-
-                onTrainingStep?.({loss, epoch});
-
+                
                 if (step % printEvery === 0) {
+                    const loss = this.loss!.forward({y: yBatch, output});
+                    const progress = Math.round((step / numOfTrainingSteps) * 100)
+                    onTrainingStep?.({
+                        loss, 
+                        epoch, 
+                        progress, 
+                        totalEpochs: epochs,
+                        step: step + (numOfTrainingSteps * epoch)
+                    });
                     console.log("\n")
                     this.showProgressBar(20, step, numOfTrainingSteps);
                     console.log(`epoch: ${epoch}/${epochs}`)
@@ -167,11 +180,10 @@ export class Model {
                 params,
                 onTrainingStep,
                 this.getModelTopology(),
-                this.getWeightDataAndConfig()
+                this.getEncodedWeightsAndConfig()
         );
         
-        this.loadWeightData(result);
-
+        this.loadEncodedWeights(result);
     }
 
     //single backwards pass of layers - doesn't update weights
@@ -235,58 +247,52 @@ export class Model {
     }
 
     //returns base64 encoded weights and weight configs
-    getWeightDataAndConfig() {
-        let weightData: string = ""; 
-        const weightConfig: IWeightConfig[] = [];
+    getEncodedWeightsAndConfig(): IModelWeightData {
+        let encoded: string = ""; 
+        const config: IWeightConfig[] = [];
         this.getWeights().forEach(weight => {
-            weightData += weight.serialize();
-            weightConfig.push(weight.getConfig());
+            encoded += weight.serialize();
+            config.push(weight.getConfig());
         })
-        return {weightData, weightConfig}
+        return {encoded, config}
     }
     
     loadModelTopology(modelTopology: IModelTopology) {
+        //need to reset first
+        if (this.layers.length > 0) this.layers = [];
+
         if (modelTopology.optimiser) {
             const optimiser = modelTopology.optimiser
             this.optimiser = deserialize(optimiser, optimiserDict, "optimiser")
-            console.log(this.optimiser);
         }
 
         if (modelTopology.loss) {
             const loss = modelTopology.loss
             this.loss = deserialize(loss, lossDict, "loss")
-            console.log(this.loss);
         }
+
+        if (this.optimiser && this.loss) this.isCompiled = true;
 
         modelTopology.layers.forEach(layerToplogy => {
             const layer = deserialize(layerToplogy, layerDict, "layer")
             this.addLayer(layer);
         })
-
-        this.isCompiled = true;
-
     }
 
-    loadWeightData({weightData, weightConfig}: {weightData: string, weightConfig: IWeightConfig[]}) {
-        const weightsBuffer = base64StringToArrayBuffer(weightData);
-        // const currentWeights = this.getNameToWeightsDict();
+    loadEncodedWeights(weights: IModelWeightData) {
+        const weightsBuffer = base64StringToArrayBuffer(weights.encoded);
         const currentWeights = this.getWeights();
         let start=0;
-        weightConfig.forEach((config, index) => {
+        weights.config.forEach((config, index) => {
+            // 4 letters in base64 = 1 number for a 32 bit typed array
             const end = start + config.rows * config.cols * 4;
             const weight = weightsBuffer.slice(start, end)
             const weightMatrix = Matrix.shape1DArray(new Float32Array(weight), config.shape);
-            
-            // if (!currentWeights[config.name]) {
-            //     throw new Error(`provided weightData weight: ${config.name} has no target weight`);
-            // }
-
-            // currentWeights[config.name].assign(weightMatrix);
             currentWeights[index].assign(weightMatrix);
             start=end
         })
     }
- 
+
 
     private showProgressBar(barWidth: number, step: number, numOfTrainingSteps: number) {
         const progress = step/numOfTrainingSteps

@@ -239,6 +239,20 @@ class Matrix {
         return new Matrix(average)
     }
 
+    max() {
+        let maxValue = 0;
+        let position: number[] = [];
+
+        this.iterate((v, i,j)=> {
+            if (v > maxValue) {
+                maxValue = v; 
+                position = [i,j];
+            } 
+        })
+
+        return {value: maxValue, position}
+    }
+
     add(m: Matrix | number) { return Matrix.add(this, m) }
     sub(m: Matrix | number) { return Matrix.sub(this, m) }
     mul(m: Matrix | number) { return Matrix.mul(this, m) }

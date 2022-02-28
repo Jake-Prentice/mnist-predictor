@@ -182,9 +182,9 @@ export class Dense extends Layer {
 
     forward({inputNodes}: IForward) {
         super.forward({inputNodes});
-        
         if (!this.isBuilt) this.build(inputNodes.rows);
-    
+
+        // activation(weight * input + bias)
         let output = this.kernel.value.dot(inputNodes); 
 
         if (this._useBias) output = output.add(this.bias.value!) 
