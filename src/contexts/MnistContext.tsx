@@ -29,7 +29,10 @@ interface IValue {
     isTraining: boolean;
     trainingStepData: ITrainingStepData;
     epochs: number;
+    setEpochs: React.Dispatch<React.SetStateAction<number>>
     isTrainDataLoading: boolean;
+    batchSize: number;
+    setBatchSize: React.Dispatch<React.SetStateAction<number>>
 }
 
 export function useMnist() {
@@ -215,7 +218,7 @@ export function MnistProvider({children}: React.PropsWithChildren<IProps>) {
             numOfNodes: 60,
             useBias: true,
             kernelInitializer: new RandomUniform(),
-            activation: new activations.ReLU()
+            activation: new activations.Sigmoid()
         }))
 
         // model.current.addLayer(new layers.Dense({

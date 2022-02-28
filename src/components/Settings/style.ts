@@ -5,11 +5,26 @@ export const StyledSettings = styled.div`
     width: 100%;
     height: 100%;
     display: flex;
-    justify-content: center;
+    flex-direction: column;
     align-items: center;
+    justify-content: center;
     background: #F4F2F2;
     border-radius: inherit;
     transition: height 0.3s ease;
+`
+
+export const SliderWrapper = styled.div`
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    /* border: 1px solid black; */
+    padding-top: 40%;
+    height: 100%;
+
+    > * {
+        margin: 1rem 0;
+    }
 `
 
 export const Container = styled.div`

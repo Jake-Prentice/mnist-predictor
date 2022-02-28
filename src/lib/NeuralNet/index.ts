@@ -151,7 +151,8 @@ export class Model {
                 
                 if (step % printEvery === 0) {
                     const loss = this.loss!.forward({y: yBatch, output});
-                    const progress = Math.round((step / numOfTrainingSteps) * 100)
+                    const progress = Math.round(
+                        ((step + (numOfTrainingSteps * epoch))/ (numOfTrainingSteps * epochs)) * 100)
                     onTrainingStep?.({
                         loss, 
                         epoch, 
