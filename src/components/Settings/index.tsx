@@ -63,12 +63,9 @@ const Settings = () => {
         setEpochs,
         batchSize,
         setBatchSize,
-        isTrainDataLoading
+        isTrainDataLoading,
+        isTraining
     } = useMnist();
-
-    const onEpochChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-
-    }
 
     return (
         <Container>
@@ -93,6 +90,7 @@ const Settings = () => {
                     batch size
                     <Slider 
                         sx={{width: "75%"}}
+                        onChange={(e, value) => setBatchSize(value as number)}
                         size={"small"}
                         step={null}
                         marks={[{value: 1, label: "1"}, {value: 16, label: "16"}, {value: 32, label: "32"}, {value: 60000, label: "60k"}]}
@@ -100,7 +98,7 @@ const Settings = () => {
 
                     />
                 </SliderWrapper>
-                {true && (
+                {isTraining && (
                     <Loader 
                         progress={trainingStepData.progress}
                         totalEpochs={epochs}
