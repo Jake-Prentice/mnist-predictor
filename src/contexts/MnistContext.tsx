@@ -5,7 +5,7 @@ import useLocalStorage from 'hooks/useLocalStorage';
 //change pls
 import * as layers from "lib/NeuralNet/layers";
 import * as activations from "lib/NeuralNet/activations"
-import { SSE } from 'lib/NeuralNet/losses';
+import { CategoricalCrossentropy, SSE } from 'lib/NeuralNet/losses';
 import { RandomUniform } from 'lib/NeuralNet/initializers';
 import { SGD } from 'lib/NeuralNet/optimisers';
 import Matrix from 'lib/Matrix';
@@ -73,12 +73,14 @@ export interface ITrainingStepData {
     losses: DataPoint[];
     currentEpoch: number;
     progress: number;
+    weights: layers.Weight[];
 }
 
 const defaultTrainingStepData: ITrainingStepData = {
     losses: [],
     currentEpoch: 0,
-    progress: 0
+    progress: 0,
+    weights: []
 }
 
 export function MnistProvider({children}: React.PropsWithChildren<IProps>) {
@@ -120,6 +122,8 @@ export function MnistProvider({children}: React.PropsWithChildren<IProps>) {
     }, [trainData])
 
 
+
+
     const trainModel = useCallback(async () => {
         if (!model.current || trainData.length === 0) return;
         //cleanup before re training so that it doesn't overlap with the current
@@ -144,7 +148,8 @@ export function MnistProvider({children}: React.PropsWithChildren<IProps>) {
                         y: params.loss
                     }], 
                     currentEpoch: params.epoch,
-                    progress: params.progress
+                    progress: params.progress,
+                    weights: params.weights
                 }
             })
         })
@@ -221,11 +226,12 @@ export function MnistProvider({children}: React.PropsWithChildren<IProps>) {
             activation: new activations.Sigmoid()
         }))
 
-        // model.current.addLayer(new layers.Dense({
-        //     numOfNodes: 30, //note check 
-        //     useBias: true,
-        //     activation: new activations.ReLU()
-        // }))
+        model.current.addLayer(new layers.Dense({
+            numOfNodes: 30, //note check 
+            useBias: true,
+            activation: new activations.Sigmoid()
+        }))
+
         model.current.addLayer(new layers.Dense({
             numOfNodes: 10, //note check 
             useBias: true,

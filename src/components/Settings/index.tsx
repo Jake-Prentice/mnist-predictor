@@ -91,11 +91,11 @@ const Settings = () => {
                     <Slider 
                         sx={{width: "75%"}}
                         onChange={(e, value) => setBatchSize(value as number)}
+                        value={batchSize}
                         size={"small"}
                         step={null}
                         marks={[{value: 1, label: "1"}, {value: 16, label: "16"}, {value: 32, label: "32"}, {value: 60000, label: "60k"}]}
                         valueLabelDisplay={"auto"}
-
                     />
                 </SliderWrapper>
                 {isTraining && (

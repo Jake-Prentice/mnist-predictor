@@ -31,6 +31,7 @@ export interface IOnTrainingStepArgs {
     totalEpochs: number;
     progress: number;
     step: number;
+    weights: Weight[];
 }
 
 export interface IModelWeightData {
@@ -137,7 +138,8 @@ export class Model {
                 xBatch = xBatch.transpose();
                 yBatch = yBatch.transpose();
                 
-                //feed forward inputs get predicted output (a) 
+                //feed forward inputs get predicted output (a)
+                // console.log(xBatch.values) 
                 const output = this.forward(xBatch);
                 
                 //backpropagation
@@ -158,7 +160,8 @@ export class Model {
                         epoch, 
                         progress, 
                         totalEpochs: epochs,
-                        step: step + (numOfTrainingSteps * epoch)
+                        step: step + (numOfTrainingSteps * epoch),
+                        weights: this.getWeights()
                     });
                     console.log("\n")
                     this.showProgressBar(20, step, numOfTrainingSteps);
@@ -190,8 +193,10 @@ export class Model {
     //single backwards pass of layers - doesn't update weights
     backward({y, output}: IBackward) {
         if (!this.isCompiled) throw new Error(); 
+        // console.log({output})  
 
         const dLoss = this.loss!.backward({y, output});
+        // console.log({dLoss})
             
         for (let i=this.layers.length - 1; i > 0; i--) {
             const nextLayer: Layer | undefined = this.layers?.[i + 1];

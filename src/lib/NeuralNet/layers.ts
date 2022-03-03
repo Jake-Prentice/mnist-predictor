@@ -237,7 +237,6 @@ export const layerDict: ClassNameToClassDict<Layer> = {
     "input": Input
 }
 
-
 export const getLayer: getClassFromClassName<Layer> = (className: string) => {
     className = className.toLowerCase();
     if (!(className in layerDict)) {
