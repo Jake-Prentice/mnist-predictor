@@ -37,11 +37,12 @@ const drawAtPosition = (
     const imageData = ctx.getImageData(0, 0, 28, 28); 
 
     for (var i = 0; i < digit.length; i++) {
-        const color = digit[i]; 
-      imageData.data[i * 4] = color * 255;
-      imageData.data[i * 4 + 1] = color * 255;
-      imageData.data[i * 4 + 2] = color * 255;
-      imageData.data[i * 4 + 3] = 255;
+        const color = digit[i] > 0 ? 255 * digit[i] : 0; 
+      imageData.data[i * 4] = 255;
+      imageData.data[i * 4 + 1] = 255;
+      imageData.data[i * 4 + 2] = 255;
+      imageData.data[i * 4 + 3] = 255 ;
+      console.log(imageData.data[i * 4])
     }
 
     const scaled = scaleImageData(imageData, 3, ctx);

@@ -1,4 +1,9 @@
-import { ClassNameToClassDict, Serializable } from "./serialization";
+import { 
+    ClassNameToClassDict, 
+    Serializable,
+    WrappedSerializable,
+    deserialize
+} from "./serialization";
 import { Layer, Weight } from "./layers";
 
 export interface IOptimiser {
@@ -47,6 +52,16 @@ export const optimiserDict: ClassNameToClassDict<Optimiser> = {
     sgd: SGD
 }
 
+export const getOptimiser = (optimiser: string|Optimiser|WrappedSerializable) => {
+    if (typeof optimiser === "string") {
+        return deserialize({
+            className: optimiser, 
+            config: {}
+        }, optimiserDict , "optimiser")
+    }
+    else if (optimiser instanceof Optimiser) return optimiser;
 
+    return deserialize(optimiser, optimiserDict, "optimiser");
+}
 
 

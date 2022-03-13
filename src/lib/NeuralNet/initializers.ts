@@ -1,6 +1,12 @@
 import {  } from "./layers";
 import Matrix, { Shape } from "../Matrix";
-import { ClassNameToClassDict, deserialize, getClassFromClassName, Serializable, SerializableConstructor, WrappedSerializable } from "./serialization";
+import { 
+    ClassNameToClassDict, 
+    deserialize, 
+    Serializable, 
+    SerializableConstructor, 
+    WrappedSerializable 
+} from "./serialization";
 
 
 export abstract class Initializer extends Serializable {
@@ -51,10 +57,26 @@ export class Ones extends Initializer {
     }
 }
 
+
+export class Constant extends Initializer {
+    className = "Constant"
+    private value: number;
+
+    constructor(value: number) {
+        super();
+        this.value = value;
+    }
+
+    forward(shape: Shape) {
+        return Matrix.fill(shape, this.value);
+    }
+}
+
 const initializerDict: ClassNameToClassDict<Initializer> = { 
     "randomuniform": RandomUniform,
     "zeros": Zeros,
-    "ones": Ones
+    "ones": Ones,
+    "constant": Constant
 }
 
 export const getInitializer = (initializer: string|Initializer|WrappedSerializable) => {

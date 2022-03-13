@@ -1,4 +1,4 @@
-import { Shape } from "./Matrix";
+import { Shape } from ".";
 
 export const create2dArray = (shape: Shape) => {
     const arr = [];

@@ -1,21 +1,13 @@
 import { getInitializer, Initializer, RandomUniform, Zeros } from "./initializers";
 import Matrix, { IMatrixConfig, Shape } from "../Matrix";
 import { Activation, getActivation } from "./activations";
-import { Serializable, arrayBufferToBase64String, wrapSerializable, ClassNameToClassDict, getClassFromClassName, SerializableConstructor, deserialize, WrappedSerializable} from "./serialization";
-import { Model } from "./index";
-
-//Base layer
-interface ILayer {
-    numOfNodes: number;
-}
-
-interface IForward {
-    inputNodes: Matrix;
-}
-
-interface IBackward {
-    passBackError: Matrix;
-}
+import { 
+    Serializable, 
+    arrayBufferToBase64String, 
+    wrapSerializable, 
+    ClassNameToClassDict, 
+    WrappedSerializable
+} from "./serialization";
 
 export interface IWeightConfig extends IMatrixConfig{ name: string };
 
@@ -35,7 +27,8 @@ export class Weight extends Serializable {
 
     assign(value: Matrix) { 
         this.value.assign(value, 
-            `${this.name} has shape ${this.value.printShape()}. But was assigned: ${value.printShape()}`
+            `${this.name} has shape ${this.value.printShape()}. 
+            But was assigned: ${value.printShape()}`
         ) 
     }
 
@@ -54,44 +47,49 @@ export class Weight extends Serializable {
 
 }
 
+interface ILayer {
+    numOfNodes: number;
+}
 
 //TODO - Name all matrices singular not plural
 export abstract class Layer extends Serializable {
     static nextUniqueLayerId=0;
     weights: Weight[];
-    isBuilt: boolean = false;
-    passBackError?: Matrix;
-    protected _outputNodes?: Matrix;
-    protected _inputNodes?: Matrix;
+    protected isBuilt: boolean = false;
+    protected _passBackError?: Matrix;
+    protected _output?: Matrix;
+    protected _input?: Matrix;
     readonly numOfNodes: number;
 
-    get outputNodes() {
-        return this._outputNodes!;
+    get output() {
+        return this._output!;
     }
 
-    set outputNodes(m: Matrix) {
+    set output(m: Matrix) {
         if (m.rows !== this.numOfNodes) throw new Error(
             `Layer expects ${this.numOfNodes} output nodes, but got ${m.rows}`
         );
-        this._outputNodes = m;
+        this._output = m;
     }
 
-    get inputNodes() {
-        return this._inputNodes!;
+    get input() {
+        return this._input!;
     }
 
-    //needs to expect any number of columns, because of batching. 
-    set inputNodes(m: Matrix) {
+    set input(m: Matrix) {
         if (m.rows !== this.numOfNodes) throw new Error(
             `Layer expects ${this.numOfNodes} input nodes, but got ${m.rows}`
         );
-        this.inputNodes = m;
+        this.input = m;
     }
 
+    get passBackError() {
+        return this._passBackError;
+    }
 
     addWeight(name: string, shape: Shape, initializer: Initializer) {
         const weight = new Weight(
-            `${this.className}${Model.nextUniqueModelId}/${name}${Layer.nextUniqueLayerId}`, 
+            `${this.className}/${name}${Layer.nextUniqueLayerId}`, 
             initializer.forward(shape)
         );
         this.weights.push(weight);
@@ -105,11 +103,11 @@ export abstract class Layer extends Serializable {
         Layer.nextUniqueLayerId++;
     }
 
-    forward({inputNodes}: IForward) {
-        this._inputNodes = inputNodes;
+    forward(input: Matrix) {
+        this._input = input;
     };
  
-    backward(props: IBackward): void {};
+    backward(passBackError: Matrix): void {};
     build(prevNumOfNodes: number) { this.isBuilt = true };
 
     getConfig(): object {
@@ -120,21 +118,17 @@ export abstract class Layer extends Serializable {
 //Input layer
 export class Input extends Layer {
     className = "Input"
-
-    constructor(props: ILayer) {
-        super(props);
-    }
-    
-    forward({ inputNodes }: IForward) {
-        super.forward({inputNodes});
-        this.outputNodes = this.inputNodes;
+        
+    forward(input: Matrix) {
+        super.forward(input);
+        this.output = this.input;
     }
 }
 
 
 //Dense Layer
 interface ILayerDense extends ILayer  {
-    activation?: Activation;
+    activation?: string|Activation|WrappedSerializable;
     useBias?: boolean;
     kernelInitializer?: Initializer|string|WrappedSerializable;
     biasInitializer?: Initializer|string|WrappedSerializable;
@@ -151,8 +145,16 @@ export class Dense extends Layer {
     biasInitializer: Initializer;
 
     kernel!: Weight;
-    bias!: Weight;
+    bias?: Weight;
 
+    get useBias() {
+        return this._useBias
+    }
+
+    set useBias(value: boolean) {
+        this.isBuilt = false;
+        this._useBias = value;
+    }
 
     constructor({
         activation, 
@@ -169,47 +171,60 @@ export class Dense extends Layer {
         //get initializers. Can deserialize
         this.kernelInitializer = getInitializer(kernelInitializer || new RandomUniform()) 
         this.biasInitializer = getInitializer(biasInitializer || new Zeros()); 
+        
     }
 
     build(prevNumOfNodes: number) {
-        
-        this.kernel = this.addWeight("kernel", [this.numOfNodes, prevNumOfNodes], this.kernelInitializer);
+        if (this.weights.length > 0) this.weights = []
+
+        this.kernel = this.addWeight(
+            "kernel", 
+            [this.numOfNodes, prevNumOfNodes], 
+            this.kernelInitializer
+        );
         if (this._useBias) {
-            this.bias = this.addWeight("bias", [this.numOfNodes, 1], this.biasInitializer);
+            this.bias = this.addWeight(
+                "bias", 
+                [this.numOfNodes, 1], 
+                this.biasInitializer
+            );
         }
         this.isBuilt = true;
     }
 
-    forward({inputNodes}: IForward) {
-        super.forward({inputNodes});
-        if (!this.isBuilt) this.build(inputNodes.rows);
+    forward(input: Matrix) {
+        super.forward(input);
+        if (!this.isBuilt) this.build(input.rows);
 
         // activation(weight * input + bias)
-        let output = this.kernel.value.dot(inputNodes); 
+        let output = this.kernel.value.dot(input); 
 
-        if (this._useBias) output = output.add(this.bias.value!) 
+        if (this._useBias) output = output.add(this.bias!.value) 
 
         if (this.activation) output = this.activation.forward(output);
 
-        this.outputNodes = output;
+        this.output = output;
 
         return output;
     }
 
-    backward({passBackError}: IBackward) {
-        if (!this.isBuilt) throw new Error("layer needs to be built first before layer can backpropagate");
+    backward(passBackError: Matrix) {
+        if (!this.isBuilt) throw new Error(`
+            layer needs to be built first before
+            layer can backpropagate
+        `);
         
         const delta = this.activation 
             ? this.activation.backward(passBackError) 
             : passBackError; 
         
         //dJdW
-        this.kernel.delta.assign(Matrix.dot(delta, this.inputNodes.transpose())) 
+        this.kernel.delta.assign(Matrix.dot(delta, this.input.transpose())) 
 
-        if (this._useBias) this.bias.delta.assign( delta.sumRows() ); 
+        if (this._useBias) this.bias!.delta.assign( delta.sumRows() ); 
 
         //will be used by the next layer back to calculate their delta
-        this.passBackError = Matrix.dot(this.kernel.value.transpose(), delta);
+        this._passBackError = Matrix.dot(this.kernel.value.transpose(), delta);
     }
 
     getConfig() {
@@ -223,24 +238,9 @@ export class Dense extends Layer {
         Object.assign(config, baseConfig);
         return config;
     }
-
-    
-    static fromConfig<T extends Serializable>(
-        cls: SerializableConstructor<T>, config: {[key: string]: any}): T {
-        return new cls(config);
-    }
-
 }
 
 export const layerDict: ClassNameToClassDict<Layer> = {
     "dense": Dense,
     "input": Input
-}
-
-export const getLayer: getClassFromClassName<Layer> = (className: string) => {
-    className = className.toLowerCase();
-    if (!(className in layerDict)) {
-        throw new Error(`cannot find given layer: ${className}`)
-    }
-    return layerDict[className] 
 }

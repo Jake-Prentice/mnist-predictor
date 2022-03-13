@@ -56,11 +56,6 @@ export interface WrappedSerializable {
     className: string;
     config: object | undefined;
 }
-
-export type getClassFromClassName<T extends Serializable> = 
-    (className: string) => SerializableConstructor<T>
-
-
     
 export const deserialize = <T extends Serializable>(
     wrappedSerializable: WrappedSerializable, 

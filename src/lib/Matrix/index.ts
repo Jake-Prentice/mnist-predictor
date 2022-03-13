@@ -1,6 +1,6 @@
 
 import { dotKernel } from "./kernels";
-import {create2dArray} from "../util"
+import {create2dArray} from "./util"
 import { BinaryOperation } from "./binaryOps";
 import {
     add, 
@@ -177,20 +177,20 @@ class Matrix {
         return T;
     }
 
-    static dotGPU(a: Matrix, b: Matrix): Matrix{
+    static dotGPU(a: Matrix, b: Matrix) {
         if (a.cols !== b.rows) throw new Error();
         dotKernel.setOutput([b.cols, a.rows]);
         let out = dotKernel(a.values, b.values, a.cols) as number[][];
-        return new Matrix(out);
+        return out
     }
 
     static dot(m1: Matrix, m2: Matrix) {
         if (m1.cols !== m2.rows) throw new Error(`cannot dot a (${m1.rows} x ${m1.cols}) & (${m2.rows} x ${m2.cols})`)
-        //TODO - make more efficient?
         const result = Matrix.fill([m1.rows, m2.cols]);
         for (let i=0; i < m1.rows; i++) {
             for (let j=0; j < m2.cols; j++) {
                 let sum = 0;
+                //this is what can run in parallel
                 for (let k=0; k < m1.cols; k++) {
                     sum += m1._values[i][k] * m2._values[k][j];
                 }
@@ -219,24 +219,9 @@ class Matrix {
         return new Matrix(sums);
     }
 
-
     averageRows() {
         const sumMatrix = this.sumRows();
         return sumMatrix.map(v => v / this.rows);
-    }
-
-    averageCols() {
-        let sum = 0;
-        const average: number[][] = [[]];
-
-        for (let i=0; i < this.rows; i++) {
-            for (let j=0; j < this.cols; j++) {
-                sum += this._values[j][i];
-            }
-            average.push([sum / this.cols]);
-        }
-
-        return new Matrix(average)
     }
 
     max() {
@@ -297,3 +282,5 @@ export default Matrix;
 
 
 */
+
+

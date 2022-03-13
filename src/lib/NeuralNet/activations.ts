@@ -60,9 +60,12 @@ const activationDict: ClassNameToClassDict<Activation> = {
 
 export const getActivation = (activation: string|Activation|WrappedSerializable) => {
     if (typeof activation === "string") {
-        return deserialize({className: activation, config: {}}, activationDict , "initializer")
+        return deserialize({
+            className: activation, 
+            config: {}
+        }, activationDict , "activation")
     }
     else if (activation instanceof Activation) return activation;
 
-    return deserialize(activation, activationDict, "initializer");
+    return deserialize(activation, activationDict, "activation");
 }

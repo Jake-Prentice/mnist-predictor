@@ -11,9 +11,7 @@ enum DigitInputTypeEnum {
     LIBRARY = "LIBRARY"
 }
 
-
-
-const DigitInput = ({predict, drawDigit}: {predict: (digit: number[]) => void, drawDigit: (digit: number[]) => void}) => {
+const DigitInput = () => {
 
     const [digitInputType, setDigitInputType] = useState<DigitInputTypeEnum>(DigitInputTypeEnum.DRAW);
 
@@ -29,7 +27,7 @@ const DigitInput = ({predict, drawDigit}: {predict: (digit: number[]) => void, d
                     onClick={() => setDigitInputType(DigitInputTypeEnum.LIBRARY)}
                 >Digit Library</SwitchButton>
             </SwitcherContainer>
-            {digitInputType === DigitInputTypeEnum.DRAW && <DrawCanvas predict={predict} drawDigit={drawDigit}/>} 
+            {digitInputType === DigitInputTypeEnum.DRAW && <DrawCanvas />} 
             {digitInputType === DigitInputTypeEnum.LIBRARY && <DigitLibrary />}
         </Container>
     )

@@ -8,6 +8,7 @@ import * as mnist from "../../mnist";
 import { MnistProvider, useMnist } from '../../contexts/MnistContext';
 import Graph from 'components/Graph';
 import RightPanel from 'components/RightPanel';
+import { getFuncExecTime } from 'utils';
 
 const ResultsContainer = styled.div`
     height: 30%;
@@ -109,7 +110,6 @@ function App() {
         return scaled;
     }
 
-
     const drawAtPosition = (
         digit: number[] | Float32Array, 
         ctx: CanvasRenderingContext2D, 
@@ -121,13 +121,12 @@ function App() {
         // console.log(Matrix.shape1DArray(imageData.data, [56,56]))
 
         const imageData = ctx.getImageData(0, 0, 28, 28); 
-
         for (var i = 0; i < digit.length; i++) {
-            const color = digit[i]; 
-          imageData.data[i * 4] = color * 255;
-          imageData.data[i * 4 + 1] = color * 255;
-          imageData.data[i * 4 + 2] = color * 255;
-          imageData.data[i * 4 + 3] = 255;
+            const color = digit[i] * 255
+            imageData.data[i * 4] = color;
+            imageData.data[i * 4 + 1] = color;
+            imageData.data[i * 4 + 2] = color;
+            imageData.data[i * 4 + 3] = 255;
         }
 
         const scaled = scaleImageData(imageData, 3, ctx);
@@ -171,30 +170,29 @@ function App() {
         }
     }
 
-    // useEffect(() => {
-    //     if (!model || trainingStepData.weights.length===0) return;
-    //     // console.log((trainingStepData.weights[0] as any ).value._values!)
-    //     drawMnistGrid((trainingStepData.weights[0] as any ).value._values! as unknown as number[][])
-    //     // drawMnistGrid(model.layers[1].weights[0].value.values)
-    //     // console.log(trainingStepData.weights)
-    // }, [model, trainingStepData])
+    useEffect(() => {
+        
+        if (!model ) return;
+        // console.log((trainingStepData.weights[0] as any ).value._values!)
+        // drawMnistGrid((trainingStepData.weights[0] as any ).value._values! as unknown as number[][])
+        drawMnistGrid(model.layers[1].weights[0].value.values)
+        // console.log(trainingStepData.weights)
+    }, [model, trainingStepData])
+
+
 
     return (
         <>
         <GlobalStyle />
-        <PanelWrapper>
-            <LeftPanel>
-                <Container>
-                    <div style={{gap: "inherit", display: "flex", flexDirection: "column", height: "100%", width: "60%"}}>
-                        <DigitInput predict={predict} drawDigit={drawDigit}/>
-                        <Results results={results} />
-                    </div>
-                    <Settings/>  
-                </Container>
-                <Graph />
-            </LeftPanel>
-            <RightPanel />
-        </PanelWrapper>
+            <Container>
+                <div style={{gap: "inherit", display: "flex", flexDirection: "column", height: "100%", width: "60%"}}>
+                    <DigitInput />
+                    <Results results={results} />
+                </div>
+                <Settings/>  
+            </Container>
+            <Graph />
+        <canvas ref={imgRef} />
         </>
     )
 }

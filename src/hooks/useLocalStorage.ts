@@ -24,7 +24,7 @@ function useLocalStorage<T>(
   const clearValue = () => sessionStorage.removeItem(PREFIX + key);
 
   useEffect(() => {
-    if (value) localStorage.setItem(prefixedKey, JSON.stringify(value));
+      if (value) localStorage.setItem(prefixedKey, JSON.stringify(value));
   }, [prefixedKey, value, initialValue])
 
   return [value, setValue, clearValue]

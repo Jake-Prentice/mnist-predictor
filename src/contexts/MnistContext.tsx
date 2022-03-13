@@ -1,16 +1,19 @@
 import React, { useContext, useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import * as Papa from "papaparse";
-import { IModelTopology, IModelWeightData, IOnTrainingStepArgs, Model } from 'lib';
 import useLocalStorage from 'hooks/useLocalStorage';
-//change pls
-import * as layers from "lib/NeuralNet/layers";
-import * as activations from "lib/NeuralNet/activations"
-import { CategoricalCrossentropy, SSE } from 'lib/NeuralNet/losses';
-import { RandomUniform } from 'lib/NeuralNet/initializers';
-import { SGD } from 'lib/NeuralNet/optimisers';
+
 import Matrix from 'lib/Matrix';
-
-
+import {
+    layers,
+    initializers,
+    losses,
+    activations,
+    optimisers,
+    IModelTopology,
+    IModelWeightData,
+    Model
+} from "lib/NeuralNet";
+import { wrapSerializable } from 'lib/NeuralNet/serialization';
 
 const MnistContext = React.createContext<IValue | undefined>(undefined);
 
@@ -32,7 +35,13 @@ interface IValue {
     setEpochs: React.Dispatch<React.SetStateAction<number>>
     isTrainDataLoading: boolean;
     batchSize: number;
-    setBatchSize: React.Dispatch<React.SetStateAction<number>>
+    setBatchSize: React.Dispatch<React.SetStateAction<number>>;
+    learningRate: number;
+    setLearningRate: React.Dispatch<React.SetStateAction<number>>;
+    optimiser: string;
+    setOptimiser: React.Dispatch<React.SetStateAction<string>>;
+    lossFunc: string;
+    setLossFunc: React.Dispatch<React.SetStateAction<string>>;
 }
 
 export function useMnist() {
@@ -95,14 +104,17 @@ export function MnistProvider({children}: React.PropsWithChildren<IProps>) {
 
     //model
     const [modelTopology, setModelToplogy] = useLocalStorage<IModelTopology | undefined>("model-topology");
-    const [weights, setWeights] = useLocalStorage<IModelWeightData | undefined>("weight-config");
+    const [weights, setWeights] = useLocalStorage<IModelWeightData | undefined>("weights");
     
     const [isTraining, setIsTraining] = useState(false);
     const [trainingStepData, setTrainingStepData] = useState<ITrainingStepData>(defaultTrainingStepData);
 
-    //model paramaters
+    //training paramaters
     const [epochs, setEpochs] = useState(5)
     const [batchSize, setBatchSize] = useState(32);
+    const [learningRate, setLearningRate] = useState(0.01);
+    const [optimiser, setOptimiser] = useState("sgd");
+    const [lossFunc, setLossFunc] = useState("sse");
 
     const [results, setResults] = useState<IResults>({});
 
@@ -122,17 +134,25 @@ export function MnistProvider({children}: React.PropsWithChildren<IProps>) {
     }, [trainData])
 
 
-
-
     const trainModel = useCallback(async () => {
         if (!model.current || trainData.length === 0) return;
-        //cleanup before re training so that it doesn't overlap with the current
+        setIsTraining(true);
+        
+        //cleanup before re training 
+        //so that it doesn't overlap with the current
         //data in the loss graph
         if (trainingStepData.losses.length > 0) {
-            console.log(defaultTrainingStepData)
             setTrainingStepData(defaultTrainingStepData)
         }
-        setIsTraining(true);
+
+        if (weights) model.current.reset();
+        
+        model.current.setLoss(lossFunc);
+        model.current.setOptimiser(optimiser);
+
+        model.current.optimiser.learningRate = learningRate;
+
+        setModelToplogy(model.current.getModelTopology())
 
         await model.current.trainOnWorker({    
             epochs,
@@ -175,15 +195,14 @@ export function MnistProvider({children}: React.PropsWithChildren<IProps>) {
 
     const predict = useCallback((digit: number[]) => {
         if (!model.current) return;
-        const input = Matrix.shape1DArray( digit.slice(1), [digit.length -1, 1]);
+        const input = Matrix.shape1DArray( digit.slice(1), [digit.length-1, 1]);
         const normalised = input.map(v => ((v / 255 ) * 0.99 ) + 0.01)
 
         const output = model.current.forward(normalised);
-        console.log(model)
         const {value, position} = output.max();
 
         setResults({
-            prediction: position[0], 
+            prediction: position[0], //the row
             confidence: Math.round(value * 100)
         })
     }, [])
@@ -194,14 +213,14 @@ export function MnistProvider({children}: React.PropsWithChildren<IProps>) {
         setIsTrainDataLoading(true);
 
         fetchMnistCsv("./data/mnist_train.csv", (results) => {
+            console.log("training data loaded. Ready to train")
             setTrainData(results.slice(1))
             setIsTrainDataLoading(false);
-            console.log("training data loaded. Ready to train")
         })
 
         fetchMnistCsv("./data/mnist_test.csv", (results) => {
-            setTestData(results.slice(1))
             console.log("test data loaded")
+            setTestData(results.slice(1))
         })
     }, []) 
     
@@ -222,7 +241,7 @@ export function MnistProvider({children}: React.PropsWithChildren<IProps>) {
         model.current.addLayer(new layers.Dense({
             numOfNodes: 60,
             useBias: true,
-            kernelInitializer: new RandomUniform(),
+            kernelInitializer: new initializers.RandomUniform(),
             activation: new activations.Sigmoid()
         }))
 
@@ -235,15 +254,9 @@ export function MnistProvider({children}: React.PropsWithChildren<IProps>) {
         model.current.addLayer(new layers.Dense({
             numOfNodes: 10, //note check 
             useBias: true,
-            activation: new activations.Sigmoid()
+            activation: "sigmoid"
         }))
 
-        model.current.compile({
-            loss: new SSE(),
-            optimiser: new SGD(),
-        });
-
-        setModelToplogy(model.current.getModelTopology())
     }, []);
 
     const value = {
@@ -266,7 +279,13 @@ export function MnistProvider({children}: React.PropsWithChildren<IProps>) {
         epochs,
         setEpochs,
         batchSize,
-        setBatchSize
+        setBatchSize,
+        learningRate,
+        setLearningRate,
+        optimiser,
+        setOptimiser,
+        lossFunc,
+        setLossFunc
     }
 
     return (
