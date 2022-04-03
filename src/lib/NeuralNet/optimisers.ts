@@ -30,7 +30,7 @@ interface ISGDUpdatable extends Layer {
     kernel: Weight;
     bias?: Weight;
 }
-
+  
 export class SGD extends Optimiser {
     className = "SGD"
     update({kernel, bias}: ISGDUpdatable): void {

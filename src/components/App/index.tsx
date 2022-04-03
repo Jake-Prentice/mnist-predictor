@@ -9,6 +9,9 @@ import { MnistProvider, useMnist } from '../../contexts/MnistContext';
 import Graph from 'components/Graph';
 import RightPanel from 'components/RightPanel';
 import { getFuncExecTime } from 'utils';
+import { activations, initializers, layers, losses, Model } from 'lib/NeuralNet';
+import { Sigmoid } from 'lib/NeuralNet/activations';
+import { isConstructorDeclaration } from 'typescript';
 
 const ResultsContainer = styled.div`
     height: 30%;
@@ -172,12 +175,95 @@ function App() {
 
     useEffect(() => {
         
-        if (!model ) return;
+        if (!model || !trainingStepData.weights[0]) return;
         // console.log((trainingStepData.weights[0] as any ).value._values!)
-        // drawMnistGrid((trainingStepData.weights[0] as any ).value._values! as unknown as number[][])
-        drawMnistGrid(model.layers[1].weights[0].value.values)
+        drawMnistGrid((trainingStepData.weights[0] as any ).value._values! as unknown as number[][])
+        // drawMnistGrid(model.layers[1].weights[0].value.values)
         // console.log(trainingStepData.weights)
     }, [model, trainingStepData])
+
+    useEffect(() => {
+
+        const model = new Model();
+
+        model.addLayer(new layers.Input({
+            numOfNodes: 2
+        }))
+
+        model.addLayer(new layers.Dense({
+            numOfNodes: 2,
+            activation: "sigmoid",
+            kernelInitializer: new initializers.Constant(0.5)
+        }))
+
+        const inputs = matrix([[1],
+            [2]])
+
+        // const output = model.forward(inputs)
+
+    }, [])
+
+    useEffect(() => {
+
+        const input = matrix([[1],
+                              [2]])
+
+        const dense = new layers.Dense({
+            numOfNodes: 2,
+            biasInitializer: "ones", 
+            kernelInitializer: new initializers.Constant(0.5)
+        })
+
+        const output = dense.forward(input);
+
+        // console.log(output);
+
+    },[])
+
+    useEffect(() => {
+        const sigmoid = new activations.Sigmoid();
+        const ReLU = new activations.ReLU();
+        const softMax = new activations.SoftMax();
+
+        // for activation.forward
+        const input = matrix([[0.1, -0.5],
+                              [0.7, 0.3]])
+        
+        // for activation.backward
+        const passBackError = matrix([[1,2],
+                                      [3,4]])
+;
+        // console.log(softMax.backward(passBackError))
+        // console.log(input.getColumn(0));
+        // console.log(     ReLU.forward(input)            )
+
+        // console.log(     ReLU.backward(passBackError)       ) 
+    },[])
+
+    useEffect(() => {
+        let outputs = matrix([[0.7, 0.1, 0.2],
+                                [0.1, 0.5, 0.4],
+                                [0.02, 0.9, 0.08]])
+
+        outputs = outputs.transpose();
+
+        const classTargets = matrix([[1,0,0],
+                                     [0,1,1],
+                                     [0,0,0]])
+
+        const passBackError = matrix([[1,2],
+                                      [3,4]])
+
+        const softMax = new activations.SoftMax();
+        softMax.output = outputs;
+
+        const loss = new losses.CategoricalCrossentropy();
+
+        const dLoss = loss.backward(classTargets, outputs)
+        
+        console.log({"softmax-backward": softMax.backward(dLoss)});
+
+    }, [])
 
 
 

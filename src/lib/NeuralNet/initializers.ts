@@ -62,14 +62,25 @@ export class Constant extends Initializer {
     className = "Constant"
     private value: number;
 
-    constructor(value: number) {
+    constructor(value?: number) {
         super();
-        this.value = value;
+        console.log({value})
+        this.value = value || 0;
     }
 
     forward(shape: Shape) {
         return Matrix.fill(shape, this.value);
     }
+
+    getConfig() {
+        return {value: this.value}
+    }
+
+    static fromConfig<T extends Serializable>(
+        cls: SerializableConstructor<T>, config: {[key: string]: any}): T {
+        return new cls(config["value"]);
+    }
+
 }
 
 const initializerDict: ClassNameToClassDict<Initializer> = { 

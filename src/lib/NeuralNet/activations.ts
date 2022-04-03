@@ -53,8 +53,41 @@ export class ReLU extends Activation {
     }
 }
 
+export class SoftMax extends Activation {
+    className = "SoftMax"
+    
+    forward(input: Matrix) {
+        this.input=input;
+        //stop values from getting too big
+        const normalised = input.sub(input.maxCols());
+    
+        const expValues = normalised.map(v => Math.exp(v));
+        const sums = expValues.sumRows();
+
+        this.output = expValues.div(sums);
+        console.log({output: this.output, sums, sumss: this.output.sumRows()})
+        return this.output;
+    }
+
+    backward(passBackError: Matrix) {
+        if (!this.output) throw new Error();
+        const result = Matrix.fill(passBackError.shape); 
+        this.output.forEachColumn((column, index) => {
+            const identity = Matrix.identity([column.rows, column.rows]);
+            const jacobian = column.mul(identity.sub(column.transpose()))
+            result.setColumn(
+                index, 
+                jacobian.dot(passBackError.getColumn(index))
+            );
+
+        })
+        return result;
+    }
+}
+
 const activationDict: ClassNameToClassDict<Activation> = { 
     "sigmoid": Sigmoid,
+    "softmax": SoftMax,
     "relu": ReLU
 }
 
@@ -69,3 +102,5 @@ export const getActivation = (activation: string|Activation|WrappedSerializable)
 
     return deserialize(activation, activationDict, "activation");
 }
+
+

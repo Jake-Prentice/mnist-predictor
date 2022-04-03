@@ -166,7 +166,7 @@ const Settings = () => {
                 )}
             </StyledSettings> 
             <TrainButton 
-                disabled={isTrainDataLoading} 
+                disabled={isTrainDataLoading || isTraining} 
                 onClick={trainModel}
             >
                 Train

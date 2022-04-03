@@ -1,6 +1,6 @@
 import { proxy, wrap } from "comlink";
 import Matrix from "../Matrix";
-import { Input, IWeightConfig, Layer, layerDict, Weight } from "./layers";
+import { getLayer, Input, IWeightConfig, Layer, layerDict, Weight } from "./layers";
 import { getLoss, Loss} from "./losses";
 import { getOptimiser, Optimiser} from "./optimisers";
 import { base64StringToArrayBuffer, deserialize, WrappedSerializable, wrapSerializable } from "./serialization";
@@ -60,7 +60,8 @@ export class Model {
         return this.layers[0]
     }
 
-    addLayer(layer: Layer) {
+    addLayer(layer: Layer|WrappedSerializable) {
+        layer = getLayer(layer);
         if (this.layers.length === 0 && !(layer instanceof Input)) {
             throw new Error("first layer must be of type Input");
         }
@@ -72,6 +73,8 @@ export class Model {
 
     forward(input: Matrix) {
         if (this.layers.length === 0) throw new Error("can't feedforward without any layers")
+        if (input.rows !== this.inputLayer.numOfNodes) throw new Error(`input given doesn't match the required input layer dimensions`)
+        
         this.inputLayer.forward(input)
 
         for (let i=1; i < this.layers.length; i++) {
@@ -123,15 +126,15 @@ export class Model {
             `)
         }
 
-        //don't need to check y.length because x and y should be the same length
-        if (batchSize && (batchSize > x.length || batchSize < 1 ) ) throw new Error(`batch size needs to be within range: 1 - ${x.length}`)
-
         //if batchSize is undefined, it defaults to a batch of all the training data
         let numOfTrainingSteps=1;
         let xBatch: Matrix;
         let yBatch: Matrix
 
         if (batchSize) {
+            //don't need to check y.length because x and y are the same length
+            if (batchSize > x.length || batchSize < 1) throw new Error(`batch size is out of range: 1 - ${x.length}`)
+
             numOfTrainingSteps = Math.floor(x.length / batchSize);
             //if there aren't enough inputs to make a full batch at the end then dump the rest into an extra batch
             if (numOfTrainingSteps * batchSize < x.length) numOfTrainingSteps += 1;
@@ -206,14 +209,10 @@ export class Model {
 
     //single backwards pass of layers - doesn't update weights
     private backward(y: Matrix, output: Matrix) {
-        const dLoss = this._loss.backward(y, output);
-            
-        for (let i=this.layers.length - 1; i > 0; i--) {
-            const nextLayer: Layer | undefined = this.layers?.[i + 1];
-            const currentLayer = this.layers[i];
-            
-            const passBackError = nextLayer ? nextLayer.passBackError! : dLoss;
-            currentLayer.backward(passBackError);
+        let passBackError = this._loss.backward(y, output);
+
+        for (let l=this.layers.length - 1; l > 0; l--) {
+            passBackError = this.layers[l].backward(passBackError);
         }
     }
 
@@ -280,8 +279,7 @@ export class Model {
         if (modelTopology.loss) this.setLoss(modelTopology.loss);
 
         modelTopology.layers.forEach(layerToplogy => {
-            const layer = deserialize(layerToplogy, layerDict, "layer")
-            this.addLayer(layer);
+            this.addLayer(layerToplogy);
         })
     }
 

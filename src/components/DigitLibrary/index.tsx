@@ -54,7 +54,7 @@ const DigitLibrary = () => {
     }
 
     const onRightCaretClick = () => {
-        if (digitIndex + 1 > 10000) return;
+        if (digitIndex + 1 > testData.length - 1) return;
         setDigitIndex(prev => prev + 1);
     }
 

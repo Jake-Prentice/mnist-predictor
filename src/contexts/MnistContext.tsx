@@ -110,8 +110,8 @@ export function MnistProvider({children}: React.PropsWithChildren<IProps>) {
     const [trainingStepData, setTrainingStepData] = useState<ITrainingStepData>(defaultTrainingStepData);
 
     //training paramaters
-    const [epochs, setEpochs] = useState(5)
-    const [batchSize, setBatchSize] = useState(32);
+    const [epochs, setEpochs] = useLocalStorage("epochs", 5)
+    const [batchSize, setBatchSize] = useLocalStorage("batch-size", 32);
     const [learningRate, setLearningRate] = useState(0.01);
     const [optimiser, setOptimiser] = useState("sgd");
     const [lossFunc, setLossFunc] = useState("sse");
@@ -180,6 +180,9 @@ export function MnistProvider({children}: React.PropsWithChildren<IProps>) {
     }, [
         model, 
         epochs, 
+        lossFunc,
+        optimiser,
+        learningRate,
         batchSize, 
         trainData,
         trainingStepData
@@ -229,9 +232,15 @@ export function MnistProvider({children}: React.PropsWithChildren<IProps>) {
         model.current = new Model();
         if (modelTopology) {
             model.current.loadModelTopology(modelTopology);
+
+            if (model.current.optimiser) {
+                setLearningRate(model.current.optimiser.learningRate)
+            }
+
             if (weights) {
                 model.current.loadEncodedWeights(weights);
             }
+
             return;
         }
 
@@ -242,19 +251,13 @@ export function MnistProvider({children}: React.PropsWithChildren<IProps>) {
             numOfNodes: 60,
             useBias: true,
             kernelInitializer: new initializers.RandomUniform(),
-            activation: new activations.Sigmoid()
-        }))
-
-        model.current.addLayer(new layers.Dense({
-            numOfNodes: 30, //note check 
-            useBias: true,
-            activation: new activations.Sigmoid()
+            activation: "sigmoid"
         }))
 
         model.current.addLayer(new layers.Dense({
             numOfNodes: 10, //note check 
             useBias: true,
-            activation: "sigmoid"
+            activation: new activations.SoftMax()
         }))
 
     }, []);

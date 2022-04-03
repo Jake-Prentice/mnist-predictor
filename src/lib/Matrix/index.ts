@@ -230,14 +230,31 @@ class Matrix {
         return Matrix.fillFromFunc(shape, (i, j) => i === j ? 1 : 0);
     }
 
-    forEachColumn(cb: (currentColumn: Matrix) => void) {
+    forEachColumn(cb: (value: Matrix, index: number) => void) {
         let currentColumn: number[][] = [];
         for (let col=0; col < this.cols; col++) {
             for (let row=0; row < this.rows; row++) {
                 currentColumn.push([this._values[row][col]])
             }
-            cb(new Matrix(currentColumn))
+            cb(new Matrix(currentColumn), col);
             currentColumn = []
+        }
+    }
+
+    getColumn(col: number) {
+        if (col > this.cols || col < 0) throw new Error("column out of range")
+        let currentColumn: number[][] = [];
+        for (let row=0; row < this.rows; row++) {
+            currentColumn.push([this._values[row][col]])
+        }
+        return new Matrix(currentColumn);
+    } 
+
+    setColumn(col: number, value: Matrix) {
+        if (value.rows !== this.rows || value.cols > 1) throw new Error();
+        if (col > this.cols || col < 0) throw new Error("column out of range")
+        for (let row=0; row < this.rows; row++) {
+            this._values[row][col] = value._values[row][0];
         }
     }
 

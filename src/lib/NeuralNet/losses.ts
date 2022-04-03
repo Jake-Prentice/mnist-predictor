@@ -6,12 +6,6 @@ import {
 } from "./serialization";
 import Matrix, { scalar } from "../Matrix/index";
 
-export interface IBackward extends IForward {};
-
-interface IForward {
-    y: Matrix;
-    output: Matrix;
-}
 
 export abstract class Loss extends Serializable {
     abstract forward(y: Matrix, output: Matrix): number;
@@ -43,7 +37,7 @@ export class CategoricalCrossentropy extends Loss {
     }
 
     backward(y: Matrix, output: Matrix): Matrix {
-        console.log({y, output}, y.div(output).mul(-1))
+        console.log({y, output, result: y.div(output).mul(-1)})
         return y.div(output).mul(-1)
     }
 }

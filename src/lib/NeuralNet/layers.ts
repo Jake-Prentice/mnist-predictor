@@ -6,7 +6,8 @@ import {
     arrayBufferToBase64String, 
     wrapSerializable, 
     ClassNameToClassDict, 
-    WrappedSerializable
+    WrappedSerializable,
+    deserialize
 } from "./serialization";
 
 export interface IWeightConfig extends IMatrixConfig{ name: string };
@@ -107,7 +108,10 @@ export abstract class Layer extends Serializable {
         this._input = input;
     };
  
-    backward(passBackError: Matrix): void {};
+    backward(passBackError: Matrix): Matrix  {
+        return passBackError
+    }
+    
     build(prevNumOfNodes: number) { this.isBuilt = true };
 
     getConfig(): object {
@@ -208,7 +212,7 @@ export class Dense extends Layer {
         return output;
     }
 
-    backward(passBackError: Matrix) {
+    backward(passBackError: Matrix): Matrix {
         if (!this.isBuilt) throw new Error(`
             layer needs to be built first before
             layer can backpropagate
@@ -221,10 +225,11 @@ export class Dense extends Layer {
         //dJdW
         this.kernel.delta.assign(Matrix.dot(delta, this.input.transpose())) 
 
-        if (this._useBias) this.bias!.delta.assign( delta.sumRows() ); 
+        if (this._useBias) this.bias!.delta.assign( delta.sumCols() ); 
 
         //will be used by the next layer back to calculate their delta
         this._passBackError = Matrix.dot(this.kernel.value.transpose(), delta);
+        return this._passBackError
     }
 
     getConfig() {
@@ -243,4 +248,16 @@ export class Dense extends Layer {
 export const layerDict: ClassNameToClassDict<Layer> = {
     "dense": Dense,
     "input": Input
+}
+
+export const getLayer = (layer: string|Layer|WrappedSerializable) => {
+    if (typeof layer === "string") {
+        return deserialize({
+            className: layer, 
+            config: {}
+        }, layerDict , "layer")
+    }
+    else if (layer instanceof Layer) return layer;
+
+    return deserialize(layer, layerDict, "layer");
 }
