@@ -178,14 +178,20 @@ class Matrix {
     }
 
     static dotGPU(a: Matrix, b: Matrix) {
-        if (a.cols !== b.rows) throw new Error();
+        if (a.cols !== b.rows) throw new Error(`
+            cannot dot a (${a.rows} x ${a.cols}) 
+            & (${b.rows} x ${b.cols})`
+        )
         dotKernel.setOutput([b.cols, a.rows]);
         let out = dotKernel(a.values, b.values, a.cols) as number[][];
         return out
     }
 
     static dot(m1: Matrix, m2: Matrix) {
-        if (m1.cols !== m2.rows) throw new Error(`cannot dot a (${m1.rows} x ${m1.cols}) & (${m2.rows} x ${m2.cols})`)
+        if (m1.cols !== m2.rows) throw new Error(`
+            cannot dot a (${m1.rows} x ${m1.cols}) 
+            & (${m2.rows} x ${m2.cols})`
+        )
         const result = Matrix.fill([m1.rows, m2.cols]);
         for (let i=0; i < m1.rows; i++) {
             for (let j=0; j < m2.cols; j++) {
@@ -206,7 +212,8 @@ class Matrix {
         return total;
     }
 
-    sumRows() {
+    // (n x 1)
+    sumCols() {
         const sums: number[][] = [];
         for (let i=0; i < this.rows; i++) {
             let sum = 0;
@@ -219,9 +226,33 @@ class Matrix {
         return new Matrix(sums);
     }
 
-    averageRows() {
-        const sumMatrix = this.sumRows();
-        return sumMatrix.map(v => v / this.rows);
+    static identity(shape: Shape) { 
+        return Matrix.fillFromFunc(shape, (i, j) => i === j ? 1 : 0);
+    }
+
+    forEachColumn(cb: (currentColumn: Matrix) => void) {
+        let currentColumn: number[][] = [];
+        for (let col=0; col < this.cols; col++) {
+            for (let row=0; row < this.rows; row++) {
+                currentColumn.push([this._values[row][col]])
+            }
+            cb(new Matrix(currentColumn))
+            currentColumn = []
+        }
+    }
+
+    // (1 x n)
+    sumRows() {
+        const sums: number[][] = [[]];
+        for (let j=0; j < this.cols; j++) {
+            let sum=0;
+            for (let i=0; i < this.rows; i++) {
+                sum += this._values[i][j]
+            }
+            sums[0].push(sum);
+        }
+
+        return new Matrix(sums);
     }
 
     max() {
@@ -238,13 +269,26 @@ class Matrix {
         return {value: maxValue, position}
     }
 
+    // maximum value of each column (1 x n)
+    maxCols() {
+        const values: number[][] = [[]]
+        for (let j=0; j < this.cols; j++) {
+            let maxValue=0;
+            for (let i=0; i < this.rows; i++) {
+                if (this._values[i][j] > maxValue) maxValue = this._values[i][j];
+            }
+            values[0].push(maxValue)
+        }
+        return new Matrix(values);
+    }
+
     add(m: Matrix | number) { return Matrix.add(this, m) }
     sub(m: Matrix | number) { return Matrix.sub(this, m) }
     mul(m: Matrix | number) { return Matrix.mul(this, m) }
     div(m: Matrix | number) { return Matrix.div(this, m) }
     pow(m: Matrix | number) { return Matrix.pow(this, m) }
-
     dot(m: Matrix) { return Matrix.dot(this, m)}
+    dotGPU(m: Matrix) {return Matrix.dotGPU(this, m)}
 }
 
 

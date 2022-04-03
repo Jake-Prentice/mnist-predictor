@@ -12,8 +12,7 @@ function _dotKernel(this: IKernelFunctionThis, a: number[][], b: number[][], aCo
 }
 
 export const dotKernel = makeKernel(_dotKernel, {
-    dynamicOutput: true,
-    pipeline: true
+    dynamicOutput: true
 })
 
 
