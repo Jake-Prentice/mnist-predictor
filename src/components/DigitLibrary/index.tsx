@@ -17,7 +17,7 @@ const CaretButtonStyles = {
 
 const DigitLibrary = () => {
 
-    const [digitIndex, setDigitIndex] = useState(0);
+    const [digitIndex, setDigitIndex] = useState(9999);
 
     const imgRef = useRef<HTMLCanvasElement>(null);
 

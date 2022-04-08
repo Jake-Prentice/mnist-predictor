@@ -133,7 +133,9 @@ export function MnistProvider({children}: React.PropsWithChildren<IProps>) {
         return [xNormalised,y];
     }, [trainData])
 
-
+    useEffect(() => {
+        console.log({normalisedX, y})
+    }, [normalisedX, y])
     const trainModel = useCallback(async () => {
         if (!model.current || trainData.length === 0) return;
         setIsTraining(true);

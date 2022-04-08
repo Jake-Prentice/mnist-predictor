@@ -70,17 +70,18 @@ export class SoftMax extends Activation {
 
     backward(passBackError: Matrix) {
         if (!this.output) throw new Error();
-        const result = Matrix.fill(passBackError.shape); 
+        const delta = Matrix.fill(passBackError.shape); 
         this.output.forEachColumn((column, index) => {
             const identity = Matrix.identity([column.rows, column.rows]);
             const jacobian = column.mul(identity.sub(column.transpose()))
-            result.setColumn(
+            delta.setColumn(
                 index, 
                 jacobian.dot(passBackError.getColumn(index))
             );
 
         })
-        return result;
+        this.delta = delta;
+        return delta;
     }
 }
 

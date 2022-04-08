@@ -25,13 +25,11 @@ export const assertShapeConsistency = (values: MatrixValuesType, shape: [number,
     })
 }
 
-
-const shapesEqual = (shapeA: Shape, shapeB: Shape) => {
-    return shapeA[0] === shapeB[0] && shapeA[1] === shapeB[1];
-}
-
 export const assertPositiveShapeDimensions = (shape: Shape) => {
-    if (shape[0] < 1 || shape[1] < 1) throw new Error(`matrix must have at least 1 row and 1 colmun, got ${shape[0]} & ${shape[1]}`)
+    if (shape[0] < 1 || shape[1] < 1) throw new Error(`
+        matrix must have at least 1 row and 1 colmun, 
+        got ${shape[0]} & ${shape[1]}
+    `)
 }
 
 export const inferShape = (values: MatrixValuesType, checkShapeConsistency: boolean) => {
@@ -49,6 +47,7 @@ export interface IMatrixConfig {
 } 
 
 class Matrix {
+
 
     readonly rows: number;
     readonly cols: number;
@@ -103,6 +102,7 @@ class Matrix {
 
     //turns one-dimensional array into Matrix of specified shape
     static shape1DArray(arr: number[] | Float32Array, shape: Shape) {
+        assertPositiveShapeDimensions(shape);
         const stride = shape[1];
         if (shape[0] * shape[1] > arr.length) {
             throw new Error(`cannot convert arr of length ${arr.length} into Matrix of shape ${this.printShape(shape)}, expected arr.length=${shape[0] * shape[1]} `)

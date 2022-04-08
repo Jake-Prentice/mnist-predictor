@@ -109,8 +109,11 @@ export class Model {
     }: ITrain) {
 
         if (!this._loss || !this._optimiser) throw new Error("Need both a loss function and an optimiser to train");
+        
         if (x.length === 0 || y.length === 0 || this.layers.length === 0) return;
-
+        
+        if (epochs < 0) throw new Error("epochs must be positive");
+        
         if (x.length !== y.length) throw new Error(`
             every input must have an output, 
             got x.length ${x.length} and y.length ${y.length}
