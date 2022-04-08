@@ -33,12 +33,6 @@ export class Weight extends Serializable {
         ) 
     }
 
-    //returns flattened and base64 encoded weight values
-    serialize() {
-        const buffer = this.value.flat().buffer;
-        return arrayBufferToBase64String(buffer);
-    }
-
     getConfig() {
         return {
             name: this.name,

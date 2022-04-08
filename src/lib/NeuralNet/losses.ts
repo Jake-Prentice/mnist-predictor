@@ -37,7 +37,6 @@ export class CategoricalCrossentropy extends Loss {
     }
 
     backward(y: Matrix, output: Matrix): Matrix {
-        console.log({y, output, result: y.div(output).mul(-1)})
         return y.div(output).mul(-1)
     }
 }

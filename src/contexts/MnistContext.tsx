@@ -255,7 +255,7 @@ export function MnistProvider({children}: React.PropsWithChildren<IProps>) {
         }))
 
         model.current.addLayer(new layers.Dense({
-            numOfNodes: 10, //note check 
+            numOfNodes: 10, 
             useBias: true,
             activation: new activations.SoftMax()
         }))

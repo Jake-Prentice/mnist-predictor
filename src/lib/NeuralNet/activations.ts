@@ -65,7 +65,6 @@ export class SoftMax extends Activation {
         const sums = expValues.sumRows();
 
         this.output = expValues.div(sums);
-        console.log({output: this.output, sums, sumss: this.output.sumRows()})
         return this.output;
     }
 

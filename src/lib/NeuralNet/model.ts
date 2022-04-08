@@ -3,7 +3,7 @@ import Matrix from "../Matrix";
 import { getLayer, Input, IWeightConfig, Layer, layerDict, Weight } from "./layers";
 import { getLoss, Loss} from "./losses";
 import { getOptimiser, Optimiser} from "./optimisers";
-import { base64StringToArrayBuffer, deserialize, WrappedSerializable, wrapSerializable } from "./serialization";
+import { arrayBufferToBase64String, base64StringToArrayBuffer, deserialize, WrappedSerializable, wrapSerializable } from "./serialization";
 
 export interface ITrain {
     epochs: number; 
@@ -109,6 +109,7 @@ export class Model {
     }: ITrain) {
 
         if (!this._loss || !this._optimiser) throw new Error("Need both a loss function and an optimiser to train");
+        if (x.length === 0 || y.length === 0 || this.layers.length === 0) return;
 
         if (x.length !== y.length) throw new Error(`
             every input must have an output, 
@@ -261,12 +262,14 @@ export class Model {
 
     //returns base64 encoded weights and weight configs
     getEncodedWeightsAndConfig(): IModelWeightData {
-        let encoded: string = ""; 
+        const weightValues: number[] = [];
         const config: IWeightConfig[] = [];
         this.getWeights().forEach(weight => {
-            encoded += weight.serialize();
+            weightValues.push(...weight.value.flat());
             config.push(weight.getConfig());
         })
+        const buffer = new Float32Array(weightValues).buffer;
+        const encoded = arrayBufferToBase64String(buffer);
         return {encoded, config}
     }
     
@@ -287,7 +290,7 @@ export class Model {
         const weightsBuffer = base64StringToArrayBuffer(weights.encoded);
         const currentWeights = this.getWeights();
 
-        if (currentWeights.length !== weights.config.length) throw new Error(`
+        if (currentWeights.length < weights.config.length) throw new Error(`
             can't deserialise encoded weights. 
             num of weights in model should be ${currentWeights.length}, 
             but got ${weights.config.length} in weight config.`)

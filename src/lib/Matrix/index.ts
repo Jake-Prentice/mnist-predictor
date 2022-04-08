@@ -150,7 +150,7 @@ class Matrix {
     flat() {
         const result: number[] = []
         this.iterate(v => result.push(v));
-        return new Float32Array(result);
+        return result;
     }
 
     map(cb: (v: number, i: number, j: number) => number) {
@@ -315,8 +315,8 @@ interface IMatrixParamas {
 }
 
 //handles validation  
-export const matrix = (values: MatrixValuesType, shape?: Shape, {checkShapeConsistency=true, passByRef=false}: IMatrixParamas = {}) => {
-
+export const matrix = (values: MatrixValuesType, shape?: Shape, {checkShapeConsistency=true}: IMatrixParamas = {}) => {
+    if (values.length === 0) throw new Error("values can't be an empty matrix")
     if (shape) assertPositiveShapeDimensions(shape);
     const [inferredRows, inferredCols] = inferShape(values, checkShapeConsistency);
 

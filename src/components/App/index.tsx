@@ -9,9 +9,10 @@ import { MnistProvider, useMnist } from '../../contexts/MnistContext';
 import Graph from 'components/Graph';
 import RightPanel from 'components/RightPanel';
 import { getFuncExecTime } from 'utils';
-import { activations, initializers, layers, losses, Model } from 'lib/NeuralNet';
-import { Sigmoid } from 'lib/NeuralNet/activations';
+import { activations, initializers, layers, losses, Model, optimisers } from 'lib/NeuralNet';
+import { getActivation, Sigmoid } from 'lib/NeuralNet/activations';
 import { isConstructorDeclaration } from 'typescript';
+import { arrayBufferToBase64String, base64StringToArrayBuffer } from 'lib/NeuralNet/serialization';
 
 const ResultsContainer = styled.div`
     height: 30%;
@@ -195,28 +196,59 @@ function App() {
             activation: "sigmoid",
             kernelInitializer: new initializers.Constant(0.5)
         }))
-
+        
         const inputs = matrix([[1],
-            [2]])
+                               [2]])
+        
+        const output = model.forward(inputs)
 
-        // const output = model.forward(inputs)
 
     }, [])
 
     useEffect(() => {
 
-        const input = matrix([[1],
-                              [2]])
+        // const input = matrix([[1,2],
+        //                       [3,4]])
 
         const dense = new layers.Dense({
             numOfNodes: 2,
-            biasInitializer: "ones", 
-            kernelInitializer: new initializers.Constant(0.5)
+            activation: "sigmoid",
+            biasInitializer: new initializers.Constant(0.5),
+            kernelInitializer: new initializers.RandomUniform(-1,1),
+            useBias: true
         })
 
-        const output = dense.forward(input);
+        const input = new layers.Input({
+            numOfNodes: 2
+        })
 
-        // console.log(output);
+        const optimiser = new optimisers.SGD({
+            learningRate: 0.1
+        })
+
+        const config = optimiser.getConfig();
+
+        const model = new Model();
+
+        model.setOptimiser(optimiser);
+        model.setLoss("sse");
+
+        model.addLayer(input)
+        model.addLayer(dense)
+
+
+        const topology = model.getModelTopology();
+        
+        // const model2 = new Model();
+
+        // model2.loadModelTopology(topology);
+
+        // console.log("here", base64StringToArrayBuffer("7Qm8vhF9Gz/etV0/455jvw=="))
+        // const weightData = model.getEncodedWeightsAndConfig();
+        // console.log(weightData)
+        // model.loadEncodedWeights(weightData);
+
+        // console.log("output", output);
 
     },[])
 
@@ -261,7 +293,79 @@ function App() {
 
         const dLoss = loss.backward(classTargets, outputs)
         
-        console.log({"softmax-backward": softMax.backward(dLoss)});
+        // console.log({"softmax-backward": softMax.backward(dLoss)});
+
+    }, [])
+
+    //Matrix testing
+    useEffect(() => {
+
+        // const matrix1 = matrix([])
+
+        
+    }, [])
+
+    //neural net testing
+    useEffect(() => {
+
+        const model2 = new Model();
+
+        // model.setOptimiser("sgd");
+        // model.setLoss("sse");
+
+        model2.addLayer(new layers.Input({
+            numOfNodes: 2
+        }))
+
+        model2.addLayer(new layers.Dense({
+            numOfNodes: 2,
+            activation: "sigmoid",
+            useBias: false,
+            kernelInitializer: new initializers.Constant(0.5)
+        }))
+        model2.addLayer(new layers.Dense({
+            numOfNodes: 3,
+            activation: "sigmoid",
+            useBias: false,
+            kernelInitializer: new initializers.Constant(0.6)
+        }))
+        console.log(model2);
+
+        const topology = model2.getModelTopology();
+        
+        // const model3 = new Model();
+ 
+        // model2.loadModelTopology(topology);
+
+        model2.loadEncodedWeights(model2.getEncodedWeightsAndConfig());
+        // const arr = []
+        
+        // arr.push(0.5,1);
+        // arr.push(0.5,1);
+
+        // const buf = new Float32Array(arr).buffer;
+        // const str1 = arrayBufferToBase64String(buf);
+        // console.log(str1.length);
+        // console.log(str1);
+        // console.log(arr);
+        // console.log(new Float32Array(base64StringToArrayBuffer(str1)));
+
+
+        // let str=""
+        // console.log("\n\nsecond\n")
+        // str += arrayBufferToBase64String(new Float32Array([0.5,1]).buffer)
+        // str +=  arrayBufferToBase64String(new Float32Array([0.5,1]).buffer)
+        // console.log(str)
+        // console.log(str.length)
+
+        // console.log(new Float32Array(base64StringToArrayBuffer(str)));
+        // // model.train({
+        //     epochs: 5,
+        //     x: [[1,2], [3,4]],
+        //     y: [[5,6], [7,8], [1,2]]
+        // })
+
+
 
     }, [])
 
